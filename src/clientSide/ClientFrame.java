@@ -67,6 +67,18 @@ public class ClientFrame extends JFrame {
 		port_t.setBounds(220, 10, port_t.getPreferredSize().width, port_t.getPreferredSize().height);
 
 		connect.setBounds(136, 47, connect.getPreferredSize().width, connect.getPreferredSize().height);
+		connect.addActionListener((e) -> {
+			
+			/*
+			ip.setEnabled(false);
+			port.setEnabled(false);
+			ip_t.setEnabled(false);
+			port_t.setEnabled(false);
+			*/
+			
+			Main.queueJob(new FileReceiver(ip_t.getText(), port_t.getText()));
+			
+		});
 		cleanCompleted.setBounds(13, 206, cleanCompleted.getPreferredSize().width, cleanCompleted.getPreferredSize().height);
 		disconnectSelected.setBounds(129, 206, disconnectSelected.getPreferredSize().width, disconnectSelected.getPreferredSize().height);
 		clearAll.setBounds(261, 206, clearAll.getPreferredSize().width, clearAll.getPreferredSize().height);

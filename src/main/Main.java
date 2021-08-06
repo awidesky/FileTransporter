@@ -224,6 +224,11 @@ public class Main {
 		
 	}
 
+	public static void queueJob(Runnable job) {
+		// TODO Auto-generated method stub
+		
+	}
+
 	
 	
 	

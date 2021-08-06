@@ -1,6 +1,10 @@
 package clientSide;
 
-public class FileReceiver {
+public class FileReceiver implements Runnable{
+
+	public FileReceiver(String ip, String port) {
+		// TODO Auto-generated constructor stub
+	}
 
 	public String getDest() {
 		// TODO Auto-generated method stub
@@ -8,6 +12,12 @@ public class FileReceiver {
 	}
 
 	public void disconnect() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void run() {
 		// TODO Auto-generated method stub
 		
 	}
