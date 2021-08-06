@@ -2,6 +2,8 @@ package clientSide;
 
 import java.awt.Dimension;
 import java.awt.Toolkit;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -15,6 +17,11 @@ import main.ProgressRenderer;
 
 public class ClientFrame extends JFrame {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -7368753427595623846L;
+	
 	private JLabel ip = new JLabel("IP :");
 	private JLabel port = new JLabel("Port :");
 	
@@ -22,6 +29,9 @@ public class ClientFrame extends JFrame {
 	private JTextField port_t = new JTextField();
 	
 	private JButton connect = new JButton("Connect");
+	private JButton cleanCompleted = new JButton("clean completed");
+	private JButton disconnectSelected = new JButton("disconnect selected");
+	private JButton clearAll = new JButton("clear all");
 	
 	private JTable table = new JTable();
 	
@@ -29,8 +39,21 @@ public class ClientFrame extends JFrame {
 		
 		setTitle("FileTransporter client " + Main.version);
 		//setIconImage(new ImageIcon().getImage());
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setSize(331, 230); //add more height than fxml because it does not think about title length
+		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+		addWindowListener(new WindowAdapter() {
+
+			@Override
+			public void windowClosing(WindowEvent e) {
+				
+				if(!ClientTableModel.getinstance().clearAll()) return;
+				e.getWindow().dispose();
+				Main.log("ClientFrame was closed");
+				Main.kill(0);
+
+			}
+
+		});
+		setSize(331, 256); //add more height than fxml because it does not think about title length
 		Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
 		setLocation(dim.width/2-getSize().width/2, dim.height/2-getSize().height/2);
 		setLayout(null);
@@ -44,6 +67,9 @@ public class ClientFrame extends JFrame {
 		port_t.setBounds(220, 10, port_t.getPreferredSize().width, port_t.getPreferredSize().height);
 
 		connect.setBounds(136, 47, connect.getPreferredSize().width, connect.getPreferredSize().height);
+		cleanCompleted.setBounds(13, 206, cleanCompleted.getPreferredSize().width, cleanCompleted.getPreferredSize().height);
+		disconnectSelected.setBounds(129, 206, disconnectSelected.getPreferredSize().width, disconnectSelected.getPreferredSize().height);
+		clearAll.setBounds(261, 206, clearAll.getPreferredSize().width, clearAll.getPreferredSize().height);
 		
 		table.setModel(ClientTableModel.getinstance());
 		table.setAutoCreateColumnsFromModel(false);
@@ -59,6 +85,9 @@ public class ClientFrame extends JFrame {
 		add(ip_t);
 		add(port_t);
 		add(connect);
+		add(cleanCompleted);
+		add(disconnectSelected);
+		add(clearAll);
 		add(scrollPane);
 		
 		setVisible(true);

@@ -68,19 +68,35 @@ public class ClientTableModel extends AbstractTableModel {
 		fireTableDataChanged();
 
 	}
+	
+	public void disconectSelected(int row) {
+		
+		if(!rows.get(row).isFinished() && !Main.confirm("Before clearing!", "This task is not done!\nDisconnect this connection?")) {
+			return;
+		}
+		
+		rows.remove(row);
+		fireTableDataChanged();
 
-	public void DisconnectAll() {
+	}
+
+	
+	/**
+	 * @return if user agreed to disconnect or all work queued were done.
+	 * */
+	public boolean clearAll() {
 
 		rows.removeIf(ReceiveData::isFinished);
 		
-		if (!rows.isEmpty() && !Main.confirm("Before clearing!", "Some task(s) are not done!\nCancel all connection(s) and clear list?"))
-				return;
+		if (rows.isEmpty() || !Main.confirm("Before clearing!", "Some task(s) are not done!\nDisconnect all connection(s) and clear list?"))
+				return false;
 
 		rows.forEach((r) -> {
 			r.disconnect();
 		});
 		rows.clear();
 		fireTableDataChanged();
+		return true;
 
 	}
 

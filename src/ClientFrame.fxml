@@ -7,7 +7,7 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
 
-<AnchorPane prefHeight="210.0" prefWidth="331.0" xmlns="http://javafx.com/javafx/16" xmlns:fx="http://javafx.com/fxml/1">
+<AnchorPane prefHeight="236.0" prefWidth="331.0" xmlns="http://javafx.com/javafx/16" xmlns:fx="http://javafx.com/fxml/1">
    <children>
       <TextField layoutX="220.0" layoutY="10.0" prefHeight="22.0" prefWidth="97.0" />
       <Label layoutX="14.0" layoutY="14.0" text="IP : " />
@@ -20,5 +20,8 @@
           <TableColumn text="Status" />
         </columns>
       </TableView>
+      <Button layoutX="13.0" layoutY="206.0" mnemonicParsing="false" text="clean completed" />
+      <Button layoutX="129.0" layoutY="206.0" mnemonicParsing="false" text="disconnect selected" />
+      <Button layoutX="261.0" layoutY="206.0" mnemonicParsing="false" text="clear all" />
    </children>
 </AnchorPane>
