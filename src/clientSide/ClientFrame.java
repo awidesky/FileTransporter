@@ -80,8 +80,17 @@ public class ClientFrame extends JFrame {
 			
 		});
 		cleanCompleted.setBounds(13, 206, cleanCompleted.getPreferredSize().width, cleanCompleted.getPreferredSize().height);
+		cleanCompleted.addActionListener((e) -> {
+			ClientTableModel.getinstance().clearDone();
+		});
 		disconnectSelected.setBounds(129, 206, disconnectSelected.getPreferredSize().width, disconnectSelected.getPreferredSize().height);
+		disconnectSelected.addActionListener((e) -> {
+			ClientTableModel.getinstance().disconectSelected(table.getSelectedRows());
+		});
 		clearAll.setBounds(261, 206, clearAll.getPreferredSize().width, clearAll.getPreferredSize().height);
+		clearAll.addActionListener((e) -> {
+			ClientTableModel.getinstance().clearAll();
+		});
 		
 		table.setModel(ClientTableModel.getinstance());
 		table.setAutoCreateColumnsFromModel(false);

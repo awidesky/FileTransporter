@@ -69,15 +69,22 @@ public class ClientTableModel extends AbstractTableModel {
 
 	}
 	
-	public void disconectSelected(int row) {
-		
-		if(!rows.get(row).isFinished() && !Main.confirm("Before clearing!", "This task is not done!\nDisconnect this connection?")) {
-			return;
+	public void disconectSelected(int[] selected) {
+
+		for (int r : selected) {
+			if (rows.get(r).isFinished()) { 
+				continue;
+			} else {
+				if (Main.confirm("Before clearing!", "Some task(s) are not done!\nDisconnect connection(s)?")) {
+					break;
+				} else { return; }
+			}
 		}
 		
-		rows.remove(row);
+		for (int r : selected) rows.remove(r);
+		
 		fireTableDataChanged();
-
+			
 	}
 
 	
