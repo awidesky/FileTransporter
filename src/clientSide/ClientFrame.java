@@ -45,7 +45,7 @@ public class ClientFrame extends JFrame {
 			@Override
 			public void windowClosing(WindowEvent e) {
 				
-				if(!ClientTableModel.getinstance().clearAll()) return;
+				if(!DownloadingListTableModel.getinstance().clearAll()) return;
 				e.getWindow().dispose();
 				Main.log("ClientFrame was closed");
 				Main.kill(0);
@@ -81,18 +81,18 @@ public class ClientFrame extends JFrame {
 		});
 		cleanCompleted.setBounds(13, 206, cleanCompleted.getPreferredSize().width, cleanCompleted.getPreferredSize().height);
 		cleanCompleted.addActionListener((e) -> {
-			ClientTableModel.getinstance().clearDone();
+			DownloadingListTableModel.getinstance().clearDone();
 		});
 		disconnectSelected.setBounds(129, 206, disconnectSelected.getPreferredSize().width, disconnectSelected.getPreferredSize().height);
 		disconnectSelected.addActionListener((e) -> {
-			ClientTableModel.getinstance().disconectSelected(table.getSelectedRows());
+			DownloadingListTableModel.getinstance().disconectSelected(table.getSelectedRows());
 		});
 		clearAll.setBounds(261, 206, clearAll.getPreferredSize().width, clearAll.getPreferredSize().height);
 		clearAll.addActionListener((e) -> {
-			ClientTableModel.getinstance().clearAll();
+			DownloadingListTableModel.getinstance().clearAll();
 		});
 		
-		table.setModel(ClientTableModel.getinstance());
+		table.setModel(DownloadingListTableModel.getinstance());
 		table.setAutoCreateColumnsFromModel(false);
 		table.getColumn("Progress").setCellRenderer(new ProgressRenderer());
 		table.setFillsViewportHeight(true);

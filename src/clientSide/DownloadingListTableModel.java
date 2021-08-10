@@ -9,17 +9,17 @@ import javax.swing.table.AbstractTableModel;
 import main.Main;
 
 
-public class ClientTableModel extends AbstractTableModel {
+public class DownloadingListTableModel extends AbstractTableModel {
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = -1301962023940227000L;
 	
-	private static ClientTableModel instance = new ClientTableModel();
-	private List<ReceiveData> rows = new ArrayList<>();
+	private static DownloadingListTableModel instance = new DownloadingListTableModel();
+	private List<FileReceiver> rows = new ArrayList<>();
 	
-	private ClientTableModel() {}
+	private DownloadingListTableModel() {}
 
 	@Override
 	public int getRowCount() {
@@ -39,7 +39,7 @@ public class ClientTableModel extends AbstractTableModel {
 		else if(columnIndex == 1)
 			return "Progress";
 		else {
-			Main.error("Invalid column index!", "Invalid column index : " + columnIndex, null);
+			Main.error("Invalid column index!", "Invalid column index in DownloadingListTableModel : " + columnIndex, null);
 			return "null"; // this should not happen!
 		}
 		
@@ -56,7 +56,7 @@ public class ClientTableModel extends AbstractTableModel {
 			return rows.get(rowIndex).getProgress();
 		}
 		
-		Main.error("Invalid column index!", "Invalid column index : " + columnIndex, null);
+		Main.error("Invalid column index!", "Invalid column index in DownloadingListTableModel : " + columnIndex, null);
 		return null; // this should not happen!
 	}
 
@@ -93,7 +93,7 @@ public class ClientTableModel extends AbstractTableModel {
 	 * */
 	public boolean clearAll() {
 
-		rows.removeIf(ReceiveData::isFinished);
+		rows.removeIf(FileReceiver::isFinished);
 		
 		if (rows.isEmpty() || !Main.confirm("Before clearing!", "Some task(s) are not done!\nDisconnect all connection(s) and clear list?"))
 				return false;
@@ -107,13 +107,7 @@ public class ClientTableModel extends AbstractTableModel {
 
 	}
 
-	public void updated(ReceiveData r) {
-
-		fireTableRowsUpdated(rows.indexOf(r), rows.indexOf(r));
-
-	}
-
-	public void addTask(ReceiveData r) {
+	public void addTask(FileReceiver r) {
 
 		SwingUtilities.invokeLater(() -> {
 			rows.add(r);
@@ -124,7 +118,7 @@ public class ClientTableModel extends AbstractTableModel {
 
 
 
-	public static ClientTableModel getinstance() {
+	public static DownloadingListTableModel getinstance() {
 
 		return instance ;
 		

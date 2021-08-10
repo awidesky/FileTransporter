@@ -30,7 +30,7 @@
         <columns>
           <TableColumn prefWidth="92.0" text="Client" />
           <TableColumn prefWidth="131.0" text="Now sending..." />
-            <TableColumn prefWidth="81.0" text="Progress" />
+          <TableColumn prefWidth="81.0" text="Progress" />
         </columns>
       </TableView>
    </children>
