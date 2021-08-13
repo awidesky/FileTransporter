@@ -196,7 +196,7 @@ public class Main {
 	public static void log(String data) {
 
 		loggerQueue.offer(() -> {
-			logTo.println(data);
+			logTo.println(data.replace("\n", System.lineSeparator()));
 		});
 		
 	}
