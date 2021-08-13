@@ -12,6 +12,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.swing.JDialog;
+import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
@@ -33,6 +34,8 @@ public class Main {
 	
 	private static final JDialog confirmDialogParent = new JDialog();
 	
+	private static JFrame frame;
+	
 	public static void main(String[] args) {
 		
 		if(args.length == 0) {
@@ -50,11 +53,11 @@ public class Main {
 		
 		if(args[0].equals("--server")) {
 		
-			SwingUtilities.invokeLater(() -> new ServerFrame());
+			SwingUtilities.invokeLater(() -> frame = new ServerFrame());
 		
 		} else if(args[0].equals("--client")) {
 			
-			SwingUtilities.invokeLater(() -> new ClientFrame());
+			SwingUtilities.invokeLater(() -> frame = new ClientFrame());
 
 		} else {
 			printUsageAndKill();
@@ -213,6 +216,7 @@ public class Main {
 
 		try {
 			SwingUtilities.invokeAndWait(() -> {
+				frame.dispose();
 				confirmDialogParent.dispose();
 			});
 		} catch (InvocationTargetException | InterruptedException e) {
@@ -228,8 +232,6 @@ public class Main {
 		// TODO Auto-generated method stub
 		
 	}
-
-	
 	
 	
 }
