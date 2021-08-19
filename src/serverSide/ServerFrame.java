@@ -16,7 +16,7 @@ import javax.swing.JTextField;
 import main.Main;
 import main.ProgressRenderer;
 
-public class ServerFrame extends JFrame {
+public class ServerFrame extends JFrame implements Runnable {
 
 	private JLabel ip = new JLabel("IP : ");
 	private JLabel port = new JLabel("Port : ");
@@ -120,5 +120,11 @@ public class ServerFrame extends JFrame {
 		add(scrollPane1);
 		
 		setVisible(true);
+	}
+
+	@Override
+	public void run() {
+		// TODO Auto-generated method stub
+		
 	}
 }
