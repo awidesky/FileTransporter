@@ -1,6 +1,7 @@
 package serverSide;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import javax.swing.SwingUtilities;
@@ -81,7 +82,9 @@ public class ClientListTableModel extends AbstractTableModel {
 			}
 		}
 		
-		for (int r : selected) rows.remove(r);
+		LinkedList<FileSender> temp = new LinkedList<>();
+		for (int r : selected) temp.add(rows.get(r));
+		rows.removeAll(temp);
 		
 		fireTableDataChanged();
 			

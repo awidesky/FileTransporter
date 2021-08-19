@@ -2,6 +2,7 @@ package serverSide;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import javax.swing.SwingUtilities;
@@ -74,7 +75,9 @@ public class UploadListTableModel extends AbstractTableModel {
 	
 	public void deleteSelected(int[] selected) {
 		
-		for (int r : selected) rows.remove(r);
+		LinkedList<File> temp = new LinkedList<>();
+		for (int r : selected) temp.add(rows.get(r));
+		rows.removeAll(temp);
 		
 		fireTableDataChanged();
 			
