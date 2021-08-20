@@ -8,6 +8,8 @@ import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -29,6 +31,8 @@ public class Main {
 	private static LinkedBlockingQueue<Runnable> loggerQueue = new LinkedBlockingQueue<>();
 	private static boolean isStop = false;
 	private static PrintWriter logTo;
+	private static ExecutorService threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+	public static int transferChunk;
 	
 	public static final String version = "v1.0.0";
 	
@@ -41,6 +45,44 @@ public class Main {
 		if(args.length == 0) {
 			printUsageAndKill();
 		}
+
+		boolean isServer = false;
+		
+		for(int i = 0; i < args.length ; i++) {
+			
+			if(args[i].startsWith("--transferChunk=")) {
+				String str = args[i].substring("--transferChunk=".length(), args[i].length());
+				
+				if(str.substring(str.length() - 1).equalsIgnoreCase("b")) { 
+					Main.transferChunk = Integer.parseInt(str.substring(0, str.length() - 1));
+				} else if(str.substring(str.length() - 2).equalsIgnoreCase("kb")) {  
+					Main.transferChunk = Integer.parseInt(str.substring(0, str.length() - 2)) * 1024;
+				} else if(str.substring(str.length() - 2).equalsIgnoreCase("mb")) { 
+					Main.transferChunk = Integer.parseInt(str.substring(0, str.length() - 2)) * 1024 * 1024;
+				} else if(str.substring(str.length() - 2).equalsIgnoreCase("gb")) {  
+					Main.transferChunk = Integer.parseInt(str.substring(0, str.length() - 2)) * 1024 * 1024 * 1024;
+				} else {
+					System.out.println("invalid argument : " +  args[i]);
+					printUsageAndKill();
+				}
+				
+				Main.log("transferChunk = " + Main.transferChunk + "byte"); //log might queued but not be printed
+				
+			} else if (args[i].equals("--server")) {
+				
+				isServer = true;
+			
+			} else if (args[i].equals("--client")) {
+				
+				isServer = false;
+
+			} else {
+				System.out.println("invalid argument : " +  args[i]);
+				printUsageAndKill();
+			}
+			
+		}
+		
 		
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -51,19 +93,11 @@ public class Main {
 		
 		prepareLogFile();
 		
-		if(args[0].equals("--server")) {
-		
+		if(isServer) {
 			SwingUtilities.invokeLater(() -> frame = new ServerFrame());
-		
-		} else if(args[0].equals("--client")) {
-			
-			SwingUtilities.invokeLater(() -> frame = new ClientFrame());
-
 		} else {
-			printUsageAndKill();
+			SwingUtilities.invokeLater(() -> frame = new ClientFrame());
 		}
-
-		
 	}
 	
 	public static void printUsageAndKill() {
@@ -73,6 +107,8 @@ public class Main {
 		System.out.println("option :");
 		System.out.printf("  %s\t%s%n", "--server","Run as server(sender)");
 		System.out.printf("  %s\t%s%n", "--client","Run as client(receiver)");
+		System.out.printf("  %s\t%s%n%s%n", "--transferChunk",	"Set size of a chunk to send at a time(affect to sending progress bar)",
+																"Can used like \"--transferChunk=512B\" or \"--transferChunk=256mb\" (b/kb/mb/gb. case ignored)");
 		kill(1);
 		
 	}
@@ -229,8 +265,8 @@ public class Main {
 	}
 
 	public static void queueJob(Runnable job) {
-		// TODO Auto-generated method stub
-		
+
+		threadPool.submit(job);
 	}
 	
 	
