@@ -13,10 +13,11 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 
+import clientSide.FileReceiver;
 import main.Main;
 import main.ProgressRenderer;
 
-public class ServerFrame extends JFrame implements Runnable {
+public class ServerFrame extends JFrame {
 
 	private JLabel ip = new JLabel("IP : ");
 	private JLabel port = new JLabel("Port : ");
@@ -26,10 +27,12 @@ public class ServerFrame extends JFrame implements Runnable {
 	private JTextField port_t = new JTextField();
 	
 	private JButton start = new JButton("start server");
-	private JButton cleanCompleted = new JButton("clean completed");
-	private JButton clearAll = new JButton("clear all");
-	private JButton deleteSelected = new JButton("delete selected");
 	private JButton addFile = new JButton("add file...");
+	private JButton deleteSelectedFile = new JButton("delete selected");
+
+	private JButton cleanCompleted = new JButton("clean completed");
+	private JButton disconnectSelected = new JButton("disconnect selected");
+	private JButton disconnectAll = new JButton("clear all");
 	
 	private JTable fileListTable = new JTable() {
 		
@@ -80,9 +83,27 @@ public class ServerFrame extends JFrame implements Runnable {
 		
 		start.setBounds(128, 202, start.getPreferredSize().width, start.getPreferredSize().height);
 		cleanCompleted.setBounds(14, 367, cleanCompleted.getPreferredSize().width, cleanCompleted.getPreferredSize().height);
-		clearAll.setBounds(261, 367, clearAll.getPreferredSize().width, clearAll.getPreferredSize().height);
-		deleteSelected.setBounds(225, 166, deleteSelected.getPreferredSize().width, deleteSelected.getPreferredSize().height);
+		disconnectAll.setBounds(261, 367, disconnectAll.getPreferredSize().width, disconnectAll.getPreferredSize().height);
+		deleteSelectedFile.setBounds(225, 166, deleteSelectedFile.getPreferredSize().width, deleteSelectedFile.getPreferredSize().height);
 		addFile.setBounds(154, 166, addFile.getPreferredSize().width, addFile.getPreferredSize().height);
+		disconnectSelected.setBounds(130, 367, disconnectSelected.getPreferredSize().width, disconnectSelected.getPreferredSize().height);
+		
+		start.addActionListener((e) -> {
+			
+			fileListTable.setEnabled(false);
+			addFile.setEnabled(false);
+			deleteSelectedFile.setEnabled(false);
+			
+			
+			clientListTable.setEnabled(true);
+			
+			cleanCompleted.setEnabled(true);
+			disconnectSelected.setEnabled(true);
+			disconnectAll.setEnabled(true);
+			
+			Main.queueJob(new FileSender(port_t.getText()));
+			
+		});
 		//TODO: add listeners
 
 		fileListTable.setModel(UploadListTableModel.getinstance());
@@ -102,7 +123,7 @@ public class ServerFrame extends JFrame implements Runnable {
 		clientListTable.getColumnModel().getColumn(1).setPreferredWidth(80);
 		JScrollPane scrollPane1 = new JScrollPane(clientListTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 		scrollPane1.setBounds(16, 231, 305, 127);
-		
+		clientListTable.setEnabled(false);
 		
 		
 		add(ip);
@@ -112,19 +133,14 @@ public class ServerFrame extends JFrame implements Runnable {
 		add(port_t);
 		add(start);
 		add(cleanCompleted);
-		add(clearAll);
-		add(deleteSelected);
+		add(disconnectAll);
+		add(deleteSelectedFile);
 		add(addFile);
 		add(cleanCompleted);
+		add(disconnectSelected);
 		add(scrollPane);
 		add(scrollPane1);
 		
 		setVisible(true);
-	}
-
-	@Override
-	public void run() {
-		// TODO Auto-generated method stub
-		
 	}
 }

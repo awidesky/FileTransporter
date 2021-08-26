@@ -1,7 +1,11 @@
 package serverSide;
 
-public class FileSender {
+public class FileSender implements Runnable {
 
+
+	public FileSender(String port) {
+		// TODO Auto-generated constructor stub
+	}
 
 	public String getIP() {
 		// TODO Auto-generated method stub
@@ -24,6 +28,12 @@ public class FileSender {
 	}
 
 	public void disconnect() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void run() {
 		// TODO Auto-generated method stub
 		
 	}
