@@ -5,6 +5,7 @@ import java.awt.Toolkit;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.File;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -13,7 +14,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 
-import clientSide.FileReceiver;
 import main.Main;
 import main.ProgressRenderer;
 
@@ -101,7 +101,7 @@ public class ServerFrame extends JFrame {
 			disconnectSelected.setEnabled(true);
 			disconnectAll.setEnabled(true);
 			
-			Main.queueJob(new FileSender(port_t.getText()));
+			Main.queueJob(new FileSender(port_t.getText(), UploadListTableModel.getinstance().getData().toArray(new File[]{})));
 			
 		});
 		//TODO: add listeners

@@ -14,7 +14,7 @@ public class ClientListTableModel extends AbstractTableModel {
 
 	private static final long serialVersionUID = 3855477049816688267L;
 	private final static ClientListTableModel instance = new ClientListTableModel();
-	private List<FileSender> rows = new ArrayList<>();
+	private List<FileSender> rows = new ArrayList<>(); // TODO : SendingConnection list로 바꾸기...?
 	
 	private ClientListTableModel() {}
 
@@ -52,7 +52,7 @@ public class ClientListTableModel extends AbstractTableModel {
 		case 0: // Client
 			return rows.get(rowIndex).getIP();
 		case 1: // Now sending...
-			return rows.get(rowIndex).getNow();
+			return rows.get(rowIndex).getNOwSendingFile();
 		case 2: // Progress
 			return rows.get(rowIndex).getProgress();
 		}
