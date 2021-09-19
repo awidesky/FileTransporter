@@ -32,7 +32,7 @@ public class Main {
 	private static boolean isStop = false;
 	private static PrintWriter logTo;
 	private static ExecutorService threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-	public static int transferChunk;
+	public static long transferChunk;
 	
 	public static final String version = "v1.0.0";
 	
@@ -125,7 +125,7 @@ public class Main {
 			
 			final JDialog dialog = new JDialog();
 			dialog.setAlwaysOnTop(true);  
-			JOptionPane.showMessageDialog(dialog, co, title, JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(dialog, co.replace("\n", System.lineSeparator()), title.replace("\n", System.lineSeparator()), JOptionPane.ERROR_MESSAGE);
 			
 		});
 		
@@ -148,7 +148,7 @@ public class Main {
 
 			final JDialog dialog = new JDialog();
 			dialog.setAlwaysOnTop(true);  
-			JOptionPane.showMessageDialog(dialog, co, title, JOptionPane.WARNING_MESSAGE);
+			JOptionPane.showMessageDialog(dialog, co.replace("\n", System.lineSeparator()), title.replace("\n", System.lineSeparator()), JOptionPane.WARNING_MESSAGE);
 			
 		});
 		

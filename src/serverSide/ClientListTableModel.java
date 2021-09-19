@@ -14,7 +14,7 @@ public class ClientListTableModel extends AbstractTableModel {
 
 	private static final long serialVersionUID = 3855477049816688267L;
 	private final static ClientListTableModel instance = new ClientListTableModel();
-	private List<FileSender> rows = new ArrayList<>(); // TODO : SendingConnection list로 바꾸기...?
+	private List<SendingConnection> rows = new ArrayList<>(); // TODO : SendingConnection list로 바꾸기...?
 	
 	private ClientListTableModel() {}
 
@@ -52,7 +52,7 @@ public class ClientListTableModel extends AbstractTableModel {
 		case 0: // Client
 			return rows.get(rowIndex).getIP();
 		case 1: // Now sending...
-			return rows.get(rowIndex).getNOwSendingFile();
+			return rows.get(rowIndex).getNowSendingFile();
 		case 2: // Progress
 			return rows.get(rowIndex).getProgress();
 		}
@@ -82,7 +82,7 @@ public class ClientListTableModel extends AbstractTableModel {
 			}
 		}
 		
-		LinkedList<FileSender> temp = new LinkedList<>();
+		LinkedList<SendingConnection> temp = new LinkedList<>();
 		for (int r : selected) temp.add(rows.get(r));
 		rows.removeAll(temp);
 		
@@ -96,7 +96,7 @@ public class ClientListTableModel extends AbstractTableModel {
 	 * */
 	public boolean clearAll() {
 
-		rows.removeIf(FileSender::isFinished);
+		rows.removeIf(SendingConnection::isFinished);
 		
 		if (rows.isEmpty() || !Main.confirm("Before clearing!", "Some task(s) are not done!\nDisconnect all connection(s) and clear list?"))
 				return false;
@@ -110,7 +110,7 @@ public class ClientListTableModel extends AbstractTableModel {
 
 	}
 
-	public void addTask(FileSender r) {
+	public void addConnection(SendingConnection r) {
 
 		SwingUtilities.invokeLater(() -> {
 			rows.add(r);

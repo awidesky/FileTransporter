@@ -19,14 +19,11 @@ public class FileSender implements Runnable {
 		port = Arrays.stream(ports.split(":")).mapToInt(Integer::parseInt).toArray();
 		files = f;
 		
-		
-		// TODO
-		// SendingConnection 배열 초기화
 	}
 
-	public String getIP() {
+	public String getselfIP() {
 		
-		try (BufferedReader in = new BufferedReader(new InputStreamReader(new URL("http://checkip.amazonaws.com").openStream()));) {
+		try (BufferedReader in = new BufferedReader(new InputStreamReader(new URL("http://checkip.amazonaws.com").openStream()))) {
 			
 			return in.readLine();
 			
@@ -38,25 +35,6 @@ public class FileSender implements Runnable {
 		}
 	}
 
-	public String getNOwSendingFile(SendingConnection what) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	public int getProgress(SendingConnection what) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	public boolean isFinished(SendingConnection what) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	public void disconnect(SendingConnection what) {
-		// TODO Auto-generated method stub
-		
-	}
 
 	@Override
 	public void run() {
