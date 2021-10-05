@@ -92,6 +92,14 @@ public class UploadListTableModel extends AbstractTableModel {
 		});
 
 	}
+	public void addFiles(List<File> temp) {
+
+		rows.addAll(temp);
+		SwingUtilities.invokeLater(() -> {
+			fireTableRowsInserted(rows.size() - 1, rows.size() - 1);
+		});
+		
+	}
 
 	public List<File> getData() {
 		return rows;
@@ -100,5 +108,7 @@ public class UploadListTableModel extends AbstractTableModel {
 	public static UploadListTableModel getinstance() {
 		return instance;
 	}
+
+
 
 }

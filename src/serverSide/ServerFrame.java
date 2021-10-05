@@ -2,23 +2,36 @@ package serverSide;
 
 import java.awt.Dimension;
 import java.awt.Toolkit;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
+import java.util.Arrays;
+import java.util.List;
 
 import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.filechooser.FileFilter;
 
+import main.ImageViewer;
 import main.Main;
 import main.ProgressRenderer;
 
 public class ServerFrame extends JFrame {
 
+	private static final long serialVersionUID = 8677739105321293193L;
+	
+	private JFileChooser chooser = new JFileChooser();;
+	private JDialog dialog;
+	
 	private JLabel ip = new JLabel("IP : ");
 	private JLabel port = new JLabel("Port : ");
 	private JLabel total= new JLabel("Total : ");
@@ -44,11 +57,24 @@ public class ServerFrame extends JFrame {
 			int column = columnAtPoint(e.getPoint());
 			if (row == -1) return "";
 			if (column == 0) return UploadListTableModel.getinstance().getData().get(row).getAbsolutePath();
-			else return UploadListTableModel.getinstance().getData().get(row).length() + "bytes";
+			else return Main.formatFileSize(UploadListTableModel.getinstance().getData().get(row).length());
 		}
 		
 	};
-	private JTable clientListTable = new JTable();
+	private JTable clientListTable = new JTable() {
+		
+		private static final long serialVersionUID = 8873559199947424949L;
+
+		@Override
+		public String getToolTipText(MouseEvent e) { 
+			int row = rowAtPoint(e.getPoint());
+			int column = columnAtPoint(e.getPoint());
+			if (row == -1) return "";
+			if (column == 2) return Main.formatFileSize(ClientListTableModel.getinstance().getData().get(row).getNowSendingFile().length());
+			else return ClientListTableModel.getinstance().getData().get(row).getStatus();
+		}
+		
+	};
 	
 	public ServerFrame() {
 
@@ -74,6 +100,55 @@ public class ServerFrame extends JFrame {
 		setLayout(null);
 		setResizable(false);
 
+		
+		dialog.setAlwaysOnTop(true);
+		
+		ImageViewer temp1 = new ImageViewer(chooser);
+		chooser.setMultiSelectionEnabled(true);
+		chooser.setAccessory(temp1);
+		chooser.addComponentListener(new ComponentAdapter() {
+		    public void componentResized(ComponentEvent e) {
+		    	temp1.dialogSizeChange();
+		    }
+		});
+		chooser.addChoosableFileFilter(new FileFilter() {
+			
+			public boolean accept(File f) {
+				if (f.isDirectory()
+						|| f.getName().endsWith(".jpeg")
+						|| f.getName().endsWith(".jpg")
+						|| f.getName().endsWith(".bmp")
+						|| f.getName().endsWith(".png"))
+					return true;
+				else
+					return false;
+			}
+
+			public String getDescription() {
+				return "Picture files (*.jpeg, *.jpg, *.png, *.bmp)";
+			}
+		});
+		
+		chooser.addChoosableFileFilter(new FileFilter() {
+			
+			public boolean accept(File f) {
+				if (f.isDirectory()
+						|| f.getName().endsWith(".pdf")
+						|| f.getName().endsWith(".docx")
+						|| f.getName().endsWith(".hwp")
+						|| f.getName().endsWith(".xlsx")
+						|| f.getName().endsWith(".pptx"))
+					return true;
+				else
+					return false;
+			}
+
+			public String getDescription() {
+				return "Document files (*.pdf, *.docx, *.hwp, *.xlsx, *.pptx)";
+			}
+		});
+		
+		
 		ip.setBounds(14, 14, ip.getPreferredSize().width, ip.getPreferredSize().height);
 		port.setBounds(180, 44, port.getPreferredSize().width, port.getPreferredSize().height);
 		total.setBounds(10, 170, total.getPreferredSize().width, total.getPreferredSize().height);
@@ -90,6 +165,7 @@ public class ServerFrame extends JFrame {
 		
 		start.addActionListener((e) -> {
 			
+			start.setEnabled(false);
 			fileListTable.setEnabled(false);
 			addFile.setEnabled(false);
 			deleteSelectedFile.setEnabled(false);
@@ -101,11 +177,38 @@ public class ServerFrame extends JFrame {
 			disconnectSelected.setEnabled(true);
 			disconnectAll.setEnabled(true);
 			
-			Main.queueJob(new FileSender(port_t.getText(), UploadListTableModel.getinstance().getData().toArray(new File[]{})));
+			Main.queueJob(new FileSender(Integer.parseInt(port_t.getText()), UploadListTableModel.getinstance().getData().toArray(new File[]{})));
 			
 		});
-		//TODO: add listeners
-
+		cleanCompleted.addActionListener((e) -> {
+			
+			ClientListTableModel.getinstance().clearDone();
+			
+		});
+		disconnectAll.addActionListener((e) -> {
+			
+			ClientListTableModel.getinstance().clearAll();
+			
+		});
+		deleteSelectedFile.addActionListener((e) -> {
+			
+			UploadListTableModel.getinstance().deleteSelected(fileListTable.getSelectedRows());
+			
+		});
+		addFile.addActionListener((e) -> {
+			
+			if (chooser.showOpenDialog(dialog) != JFileChooser.APPROVE_OPTION) return;
+			List<File> temp = Arrays.asList(chooser.getSelectedFiles());
+			chooser.setCurrentDirectory(temp.get(0).getAbsoluteFile().getParentFile());
+			UploadListTableModel.getinstance().addFiles(temp);
+			
+		});
+		disconnectSelected.addActionListener((e) -> {
+			
+			ClientListTableModel.getinstance().disconectSelected(clientListTable.getSelectedRows());
+			
+		});
+		
 		fileListTable.setModel(UploadListTableModel.getinstance());
 		fileListTable.setAutoCreateColumnsFromModel(false);
 		fileListTable.setFillsViewportHeight(true);
@@ -120,7 +223,7 @@ public class ServerFrame extends JFrame {
 		clientListTable.setFillsViewportHeight(true);
 		clientListTable.getColumnModel().getColumn(0).setPreferredWidth(92);
 		clientListTable.getColumnModel().getColumn(1).setPreferredWidth(131);
-		clientListTable.getColumnModel().getColumn(1).setPreferredWidth(80);
+		clientListTable.getColumnModel().getColumn(2).setPreferredWidth(80);
 		JScrollPane scrollPane1 = new JScrollPane(clientListTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 		scrollPane1.setBounds(16, 231, 305, 127);
 		clientListTable.setEnabled(false);

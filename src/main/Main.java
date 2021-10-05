@@ -250,6 +250,7 @@ public class Main {
 
 	public static void kill(int i) {
 
+		isStop = true;
 		try {
 			SwingUtilities.invokeAndWait(() -> {
 				frame.dispose();
@@ -264,9 +265,33 @@ public class Main {
 		
 	}
 
+	/**
+	 * Submits a job to main worker thread pool
+	 * */
 	public static void queueJob(Runnable job) {
 
 		threadPool.submit(job);
+		
+	}
+
+	public static String formatFileSize(long length) {
+		
+		switch ((int)(Math.log(length) / Math.log(1024))) {
+		
+		case 0:
+			return length + " byte";
+		case 1:
+			return (length / 1024.0) + " KB";
+		case 2:
+			return (length / (1024.0 * 1024)) + " MB";
+		case 3:
+			return (length / (1024.0 * 1024 * 1024)) + " GB";
+		}
+		return (length / (1024.0 * 1024 * 1024 * 1024)) + " TB";
+	}
+
+	public static boolean isAppStopped() {
+		return isStop;
 	}
 	
 	

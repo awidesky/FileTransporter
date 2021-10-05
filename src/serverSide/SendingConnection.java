@@ -3,12 +3,13 @@ package serverSide;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.Charset;
 import java.nio.file.StandardOpenOption;
 
 import main.Main;
-import main.TwoConsumer;
 
 
 /**
@@ -24,11 +25,18 @@ public class SendingConnection {
 	
 	private int i = 0;
 	private int progress = 0;
+	private String status = "";
+	
+	private final int lenBufSize = 16;
+	private ByteBuffer lenBuf = ByteBuffer.allocate(lenBufSize);
 	
 	public SendingConnection(SocketChannel ch, File[] f) {
 		
-		sendTo= ch;
+		sendTo = ch;
 		files = f;
+		status = "Preparing...";
+		
+		Main.log("Connected to " + getIP());
 		
 	}
 	
@@ -59,17 +67,41 @@ public class SendingConnection {
 	 * @return <code>true</code> if all the sending process went well. if not, <code>false</code>
 	 * 
 	 * */
-	public boolean start(TwoConsumer<File, Integer> updateCallback) {
+	public boolean start() {
 
 		if(i != 0) new Exception("Connection to " + getIP() + " in port " + getPort() + "has aborted while sending " + getNowSendingFile().getAbsolutePath() + "!");
 		
+		status = "Starting...";
+		
 		for(; i < files.length ; i++) {
+			
+			
+			/* Send metadata */
+			ByteBuffer nameBuf = Charset.forName("UTF-8").encode(files[i].getName());
+			
+			int nameBufSize = nameBuf.limit();
+			lenBuf.asLongBuffer().put(nameBufSize);
+			lenBuf.asLongBuffer().put(files[i].length());
+			
+			try {
+				
+				long sent = 0L;
+				while ((sent += sendTo.write(lenBuf)) != lenBufSize);
+				
+				sent = 0L;
+				while ((sent += sendTo.write(nameBuf)) != nameBufSize);
+				
+			} catch (IOException e1) {
+				Main.error("Failed to send metadata!", "Cannot send metadata :" + files[i].getAbsolutePath() + files[i].getName() + "\n%e%", e1);
+				status = "ERROR!";
+				return false;
+			}
+			
 			
 			progress = 0;
 			long size = files[i].length();
 			long totalBytesTransfered = 0L;
-			
-			
+
 			try (FileChannel srcFile = FileChannel.open(files[i].toPath(), StandardOpenOption.READ)) {
 
 				while (totalBytesTransfered < size) {
@@ -79,8 +111,9 @@ public class SendingConnection {
 						transferFromByteCount = srcFile.transferTo(totalBytesTransfered,
 								Math.min(Main.transferChunk, size - totalBytesTransfered), sendTo);
 					} catch (IOException e) {
-						Main.error("Failed to send file!", "Cannot send file :" + files[i].getAbsolutePath() + " ("
+						Main.error("Failed to send file!", "Cannot send file :" + files[i].getAbsolutePath() + files[i].getName() + " ("
 								+ (int) (100.0 * totalBytesTransfered / size) + "%)\n%e%", e);
+						status = "ERROR!";
 						return false;
 					}
 
@@ -89,17 +122,23 @@ public class SendingConnection {
 					}
 					totalBytesTransfered += transferFromByteCount;
 					progress = (int) (100.0 * totalBytesTransfered / size);
-					updateCallback.consume(files[i], progress);
+					Main.log("Sent " + transferFromByteCount + "byte (" + progress + "%) from " + files[i].getName() + " to " + getIP());
+					status = "Uploading... (" + (i + 1) + "/" + files.length + ")";
+					ClientListTableModel.getinstance().updated(this);
 				}
 
 			} catch (IOException e) {
-				Main.error("Failed to handle file!", "Cannot handle file :" + files[i].getAbsolutePath() + "\n%e%", e);
+				Main.error("Failed to handle file!", "Cannot handle file :" + files[i].getAbsolutePath() + files[i].getName() + "\n%e%", e);
+				status = "ERROR!";
 				return false;
 			}
 		    
 			
 		} //for end
 		
+		disconnect();
+		status = "Completed!";
+
 		return true;
 	}
 
@@ -107,6 +146,10 @@ public class SendingConnection {
 		return files[i];
 	}
 
+	public String getNowSendingFileString() {
+		return files[i].getName() + " (" + (i+1) + "/" + files.length + ")";
+	}
+	
 	public int getProgress() {
 		return progress;
 	}
@@ -115,9 +158,23 @@ public class SendingConnection {
 		return i == files.length && progress == 100;
 	}
 
+	/**
+	 * This method is invoked in EDT
+	 * */
 	public void disconnect() {
-		// TODO Auto-generated method stub
+		
+		try {
+			sendTo.close();
+		} catch (IOException e) {
+			Main.error("Cannot close connection!", "Can't close connection to " + getIP() + "\n%e%", e);
+		}
 		
 	}
+
+	public String getStatus() {
+		return status;
+	}
+
+
 }
 

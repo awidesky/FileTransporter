@@ -4,20 +4,21 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.InetSocketAddress;
 import java.net.URL;
-import java.util.Arrays;
+import java.nio.channels.ServerSocketChannel;
 
 import main.Main;
 
 public class FileSender implements Runnable {
 
-	private int[] port;
+	private int port;
 	private File[] files;
 	
-	public FileSender(String ports, File[] f) {
+	public FileSender(int port, File[] files) {
 
-		port = Arrays.stream(ports.split(":")).mapToInt(Integer::parseInt).toArray();
-		files = f;
+		this.port = port;
+		this.files = files;
 		
 	}
 
@@ -38,7 +39,33 @@ public class FileSender implements Runnable {
 
 	@Override
 	public void run() {
-		// TODO Auto-generated method stub
-		//connection Listening ÄÚµå
+
+		try (ServerSocketChannel server = ServerSocketChannel.open()) {
+			
+			server.bind(new InetSocketAddress(port));
+			
+			while(!Main.isAppStopped()){
+				
+				Main.log("Ready for connection..."); 
+				
+				try {
+					SendingConnection sc = new SendingConnection(server.accept(), files);
+					ClientListTableModel.getinstance().addConnection(sc);
+				
+					Main.queueJob(() -> {
+						sc.start();
+					});
+				} catch (IOException e) {
+					Main.error("Failed to connect!", "Failed to connect with an client!" , e);
+				}
+
+			}
+			
+			Main.log("Server stopped. closing server...");
+			
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
 	}
 }

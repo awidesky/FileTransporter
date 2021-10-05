@@ -14,7 +14,7 @@ public class ClientListTableModel extends AbstractTableModel {
 
 	private static final long serialVersionUID = 3855477049816688267L;
 	private final static ClientListTableModel instance = new ClientListTableModel();
-	private List<SendingConnection> rows = new ArrayList<>(); // TODO : SendingConnection list로 바꾸기...?
+	private List<SendingConnection> rows = new ArrayList<>(); 
 	
 	private ClientListTableModel() {}
 
@@ -52,7 +52,7 @@ public class ClientListTableModel extends AbstractTableModel {
 		case 0: // Client
 			return rows.get(rowIndex).getIP();
 		case 1: // Now sending...
-			return rows.get(rowIndex).getNowSendingFile();
+			return rows.get(rowIndex).getNowSendingFileString();
 		case 2: // Progress
 			return rows.get(rowIndex).getProgress();
 		}
@@ -101,8 +101,13 @@ public class ClientListTableModel extends AbstractTableModel {
 		if (rows.isEmpty() || !Main.confirm("Before clearing!", "Some task(s) are not done!\nDisconnect all connection(s) and clear list?"))
 				return false;
 
-		rows.forEach((r) -> {
-			r.disconnect();
+		rows.forEach((s) -> {
+
+			Main.queueJob(() -> {
+
+				s.disconnect();
+			});
+			
 		});
 		rows.clear();
 		fireTableDataChanged();
@@ -119,8 +124,18 @@ public class ClientListTableModel extends AbstractTableModel {
 
 	}
 
+	public void updated(SendingConnection r) {
+
+		SwingUtilities.invokeLater(() -> { fireTableRowsUpdated(rows.indexOf(r), rows.indexOf(r)); });
+
+	}
+	
+	public List<SendingConnection> getData() {
+		return rows;
+	}
+	
 	public static ClientListTableModel getinstance() {
 		return instance;
-	}
+	}	
 
 }

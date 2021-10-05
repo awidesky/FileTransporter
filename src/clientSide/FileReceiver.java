@@ -39,7 +39,7 @@ public class FileReceiver implements Runnable{
 	@Override
 	public void run() {
 		// TODO Auto-generated method stub
-		
+		// ø¨∞·¥Ú¿∏∏È "FileTransporter client " + Main.version + ip, port
 	}
 
 }
