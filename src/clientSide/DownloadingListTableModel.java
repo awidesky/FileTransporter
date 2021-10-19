@@ -18,7 +18,7 @@ public class DownloadingListTableModel extends AbstractTableModel {
 	private static final long serialVersionUID = -1301962023940227000L;
 	
 	private static DownloadingListTableModel instance = new DownloadingListTableModel();
-	private List<FileReceiver> rows = new ArrayList<>();
+	private List<ReceivingConnection> rows = new ArrayList<>();
 	
 	private DownloadingListTableModel() {}
 
@@ -82,7 +82,7 @@ public class DownloadingListTableModel extends AbstractTableModel {
 			}
 		}
 		
-		LinkedList<FileReceiver> temp = new LinkedList<>();
+		LinkedList<ReceivingConnection> temp = new LinkedList<>();
 		for (int r : selected) temp.add(rows.get(r));
 		rows.removeAll(temp);
 		
@@ -96,7 +96,7 @@ public class DownloadingListTableModel extends AbstractTableModel {
 	 * */
 	public boolean clearAll() {
 
-		rows.removeIf(FileReceiver::isFinished);
+		rows.removeIf(ReceivingConnection::isFinished);
 		
 		if (rows.isEmpty() || !Main.confirm("Before clearing!", "Some task(s) are not done!\nDisconnect all connection(s) and clear list?"))
 				return false;
@@ -110,7 +110,7 @@ public class DownloadingListTableModel extends AbstractTableModel {
 
 	}
 
-	public void addTask(FileReceiver r) {
+	public void addTask(ReceivingConnection r) {
 
 		SwingUtilities.invokeLater(() -> {
 			rows.add(r);
