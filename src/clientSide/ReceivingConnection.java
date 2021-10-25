@@ -1,5 +1,8 @@
 package clientSide;
 
+/**
+ * 
+ * */
 public class ReceivingConnection {
 
 	public int getProgress() {

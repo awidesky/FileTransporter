@@ -6,7 +6,6 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.Charset;
 import java.nio.file.StandardOpenOption;
 
 import main.Main;
@@ -27,8 +26,7 @@ public class SendingConnection {
 	private int progress = 0;
 	private String status = "";
 	
-	private final int lenBufSize = 16;
-	private ByteBuffer lenBuf = ByteBuffer.allocate(lenBufSize);
+	private ByteBuffer lenBuf = ByteBuffer.allocate(Main.lenBufSize);
 	
 	public SendingConnection(SocketChannel ch, File[] f) {
 		
@@ -72,12 +70,13 @@ public class SendingConnection {
 		if(i != 0) new Exception("Connection to " + getIP() + " in port " + getPort() + "has aborted while sending " + getNowSendingFile().getAbsolutePath() + "!");
 		
 		status = "Starting...";
+		ByteBuffer clientResponse = ByteBuffer.allocate(1); //if client chose to receive this file, this buffer will contain 1, otherwise 0.
 		
 		for(; i < files.length ; i++) {
 			
 			
 			/* Send metadata */
-			ByteBuffer nameBuf = Charset.forName("UTF-8").encode(files[i].getName());
+			ByteBuffer nameBuf = Main.charset.encode(files[i].getName());
 			
 			int nameBufSize = nameBuf.limit();
 			lenBuf.asLongBuffer().put(nameBufSize);
@@ -86,10 +85,12 @@ public class SendingConnection {
 			try {
 				
 				long sent = 0L;
-				while ((sent += sendTo.write(lenBuf)) != lenBufSize);
+				while ((sent += sendTo.write(lenBuf)) != Main.lenBufSize);
 				
 				sent = 0L;
 				while ((sent += sendTo.write(nameBuf)) != nameBufSize);
+				
+				while (sendTo.read(clientResponse) != 1);
 				
 			} catch (IOException e1) {
 				Main.error("Failed to send metadata!", "Cannot send metadata :" + files[i].getAbsolutePath() + files[i].getName() + "\n%e%", e1);
@@ -97,6 +98,9 @@ public class SendingConnection {
 				return false;
 			}
 			
+			if(clientResponse.get() == 0) { /* User don't want to download this file, skip it. */
+				continue;
+			}
 			
 			progress = 0;
 			long size = files[i].length();

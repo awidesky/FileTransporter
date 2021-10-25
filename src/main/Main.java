@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.ExecutorService;
@@ -35,6 +36,9 @@ public class Main {
 	public static long transferChunk;
 	
 	public static final String version = "v1.0.0";
+	
+	public static final int lenBufSize = 16;
+	public static final Charset charset = Charset.forName("UTF-8");
 	
 	private static final JDialog confirmDialogParent = new JDialog();
 	
@@ -158,6 +162,10 @@ public class Main {
 	}
 	
 
+	/**
+	 * Ask user to do confirm something with <code>JOptionPane{@link #showConfirmDialog(String, String, JDialog)}</code>
+	 * This method checks if current thread is EDT or not, so you don't have to check it or avoid thread deadlock manually.
+	 * */
 	public static boolean confirm(String title, String message) {
 
 		confirmDialogParent.setAlwaysOnTop(true);
