@@ -2,6 +2,7 @@ package clientSide;
 
 import java.awt.Dimension;
 import java.awt.Toolkit;
+import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
@@ -33,7 +34,20 @@ public class ClientFrame extends JFrame {
 	private JButton disconnectSelected = new JButton("disconnect selected");
 	private JButton clearAll = new JButton("clear all");
 	
-	private JTable table = new JTable();
+	private JTable table = new JTable(){
+		
+		private static final long serialVersionUID = -4271449717757183126L;
+
+		@Override
+		public String getToolTipText(MouseEvent e) { 
+			int row = rowAtPoint(e.getPoint());
+			int column = columnAtPoint(e.getPoint());
+			if (row == -1) return "";
+			if (column == 0) return DownloadingListTableModel.getinstance().getData().get(row).getDest();
+			else return DownloadingListTableModel.getinstance().getData().get(row).getProgressString();
+		}
+		
+	};
 	
 	public ClientFrame() {
 		

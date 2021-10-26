@@ -24,6 +24,8 @@ public class SendingConnection {
 	
 	private int i = 0;
 	private int progress = 0;
+	private long sizeOfNowSendingFile = 0L;
+	private long totalBytesTransfered = 0L;
 	private String status = "";
 	
 	private ByteBuffer lenBuf = ByteBuffer.allocate(Main.lenBufSize);
@@ -103,20 +105,20 @@ public class SendingConnection {
 			}
 			
 			progress = 0;
-			long size = files[i].length();
-			long totalBytesTransfered = 0L;
+			sizeOfNowSendingFile = files[i].length();
+			totalBytesTransfered = 0L;
 
 			try (FileChannel srcFile = FileChannel.open(files[i].toPath(), StandardOpenOption.READ)) {
 
-				while (totalBytesTransfered < size) {
+				while (totalBytesTransfered < sizeOfNowSendingFile) {
 					long transferFromByteCount;
 
 					try {
 						transferFromByteCount = srcFile.transferTo(totalBytesTransfered,
-								Math.min(Main.transferChunk, size - totalBytesTransfered), sendTo);
+								Math.min(Main.transferChunk, sizeOfNowSendingFile - totalBytesTransfered), sendTo);
 					} catch (IOException e) {
 						Main.error("Failed to send file!", "Cannot send file :" + files[i].getAbsolutePath() + files[i].getName() + " ("
-								+ (int) (100.0 * totalBytesTransfered / size) + "%)\n%e%", e);
+								+ (int) (100.0 * totalBytesTransfered / sizeOfNowSendingFile) + "%)\n%e%", e);
 						status = "ERROR!";
 						return false;
 					}
@@ -125,7 +127,7 @@ public class SendingConnection {
 						break;
 					}
 					totalBytesTransfered += transferFromByteCount;
-					progress = (int) (100.0 * totalBytesTransfered / size);
+					progress = (int) (100.0 * totalBytesTransfered / sizeOfNowSendingFile);
 					Main.log("Sent " + transferFromByteCount + "byte (" + progress + "%) from " + files[i].getName() + " to " + getIP());
 					status = "Uploading... (" + (i + 1) + "/" + files.length + ")";
 					ClientListTableModel.getinstance().updated(this);
@@ -158,6 +160,10 @@ public class SendingConnection {
 		return progress;
 	}
 
+	public String getProgressString() {
+		return progress + "% (" + Main.formatFileSize(totalBytesTransfered) + " / " +  Main.formatFileSize(sizeOfNowSendingFile) + ")";
+	}
+	
 	public boolean isFinished() {
 		return i == files.length && progress == 100;
 	}

@@ -38,7 +38,7 @@ public class DownloadingListTableModel extends AbstractTableModel {
 		if(columnIndex == 0)
 			return "Destination";
 		else if(columnIndex == 1)
-			return "Progress";
+			return "status";
 		else {
 			Main.error("Invalid column index!", "Invalid column index in DownloadingListTableModel : " + columnIndex, null);
 			return "null"; // this should not happen!
@@ -54,7 +54,7 @@ public class DownloadingListTableModel extends AbstractTableModel {
 		case 0: // destination
 			return rows.get(rowIndex).getDest();
 		case 1: // status
-			return rows.get(rowIndex).getProgress();
+			return rows.get(rowIndex).getStaus();
 		}
 		
 		Main.error("Invalid column index!", "Invalid column index in DownloadingListTableModel : " + columnIndex, null);
@@ -120,6 +120,9 @@ public class DownloadingListTableModel extends AbstractTableModel {
 	}
 
 
+	public List<FileReceiver> getData() {
+		return rows;
+	}
 
 	public static DownloadingListTableModel getinstance() {
 

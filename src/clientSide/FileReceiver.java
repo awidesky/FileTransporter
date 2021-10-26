@@ -13,8 +13,10 @@ public class FileReceiver implements Runnable{
 
 	
 	private int progress = 0;
+	private long totalBytesTransfered;
+	private long sizeOfNowReceivingFile;
 	private boolean isDone = false;
-	private String status = ""; //TODO : staus도 GUI에 나오게..
+	private String status = ""; 
 	
 	private String ip;
 	private int port;
@@ -33,8 +35,16 @@ public class FileReceiver implements Runnable{
 		return isDone;
 	}
 
-	public int getProgress() {
-		return progress;
+	public String getProgressString() {
+		return progress + "% (" + Main.formatFileSize(totalBytesTransfered) + " / " +  Main.formatFileSize(sizeOfNowReceivingFile) + ")";
+	}
+	
+	public String getStaus() {
+		
+		if(status.equals("Downloading...")) {
+			return status + " (" + progress + "%)";
+		}
+		return status;
 	}
 
 	public String getDest() {
@@ -68,8 +78,7 @@ public class FileReceiver implements Runnable{
 				long[] lenData = new long[2]; // first is length of file name, and second is length of the file(both
 												// counted in byte).
 
-				while ((received += ch.read(lenBuf)) != Main.lenBufSize)
-					;
+				while ((received += ch.read(lenBuf)) != Main.lenBufSize);
 
 				lenBuf.asLongBuffer().get(lenData);
 
@@ -81,8 +90,11 @@ public class FileReceiver implements Runnable{
 
 				gotMetadata = true;
 
-				if(!chooseSaveDest(fileName, lenData[1])) continue;
+				if(!chooseSaveDest(fileName, lenData[1])) continue; // user don't want to download this file.
 				
+				status = "Downloading...";
+				
+				//TODO : download
 			}
 			
 
@@ -122,6 +134,7 @@ public class FileReceiver implements Runnable{
 		return false;
 		
 	}
+
 
 
 
