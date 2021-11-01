@@ -163,7 +163,7 @@ public class Main {
 	
 
 	/**
-	 * Ask user to do confirm something with <code>JOptionPane{@link #showConfirmDialog(String, String, JDialog)}</code>
+	 * Ask user to do confirm something with <code>JOptionPane{@link #showConfirmDialog(String, String, JDialog)}</code>. <br>
 	 * This method checks if current thread is EDT or not, so you don't have to check it or avoid thread deadlock manually.
 	 * */
 	public static boolean confirm(String title, String message) {

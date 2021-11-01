@@ -43,8 +43,12 @@ public class ClientFrame extends JFrame {
 			int row = rowAtPoint(e.getPoint());
 			int column = columnAtPoint(e.getPoint());
 			if (row == -1) return "";
-			if (column == 0) return DownloadingListTableModel.getinstance().getData().get(row).getDest();
-			else return DownloadingListTableModel.getinstance().getData().get(row).getProgressString();
+			if (column == 0) {
+				return DownloadingListTableModel.getinstance().getData().get(row).getDest();
+			} else {
+				FileReceiver r = DownloadingListTableModel.getinstance().getData().get(row);
+				return r.getProgressString() + ", Connected to " + r.connectedTo();
+			}
 		}
 		
 	};

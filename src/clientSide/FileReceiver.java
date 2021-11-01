@@ -1,5 +1,6 @@
 package clientSide;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -17,11 +18,13 @@ public class FileReceiver implements Runnable{
 	private long sizeOfNowReceivingFile;
 	private boolean isDone = false;
 	private String status = ""; 
+	private File destination;
 	
 	private String ip;
 	private int port;
 	
 	private ByteBuffer lenBuf = ByteBuffer.allocate(Main.lenBufSize);
+	private ByteBuffer responseBuf = ByteBuffer.allocate(1);
 	
 	public FileReceiver(String ip, String port) {
 		
@@ -67,34 +70,46 @@ public class FileReceiver implements Runnable{
 			Main.log("Connecting to Server...");
 			ch.configureBlocking(true);
 			ch.connect(address);
-			// ø¨∞·¥Ú¿∏∏È "FileTransporter client " + Main.version + ip, port
 
 			DownloadingListTableModel.getinstance().addTask(this);
 			
 			while (!isDone) {
 				
+				lenBuf.clear();
+				responseBuf.clear();
+				
 				gotMetadata = false;
-				long received = 0L;
+				long transferred = 0L;
 				long[] lenData = new long[2]; // first is length of file name, and second is length of the file(both
 												// counted in byte).
 
-				while ((received += ch.read(lenBuf)) != Main.lenBufSize);
+				while ((transferred += ch.read(lenBuf)) != Main.lenBufSize);
 
 				lenBuf.asLongBuffer().get(lenData);
 
 				ByteBuffer nameBuf = ByteBuffer.allocate((int) lenData[0]);
-				received = 0L;
-				while ((received += ch.read(nameBuf)) != (int) lenData[0]);
+				transferred = 0L;
+				while ((transferred += ch.read(nameBuf)) != (int) lenData[0]);
 
 				String fileName = Main.charset.decode(nameBuf.flip()).toString();
 
 				gotMetadata = true;
 
-				if(!chooseSaveDest(fileName, lenData[1])) continue; // user don't want to download this file.
+				if(Main.confirm("Download file?", "Download " + fileName + "(" + Main.formatFileSize(lenData[1]) +")")) { // Ask user where to save the received file.
+					destination = chooseSaveDest(fileName, lenData[1]);
+					if(destination != null) {
+						responseBuf.put((byte) 1);
+						transferred = 0L;
+						while ((transferred += ch.write(responseBuf)) != 1);
+						download();
+					}
+				}
 				
-				status = "Downloading...";
+				responseBuf.put((byte) 0);
+				transferred = 0L;
+				while ((transferred += ch.write(responseBuf)) != 1);
+				continue;// user don't want to download this file.
 				
-				//TODO : download
 			}
 			
 
@@ -106,33 +121,56 @@ public class FileReceiver implements Runnable{
 	}
 
 
-	/**
-	 * Ask user where to save the received file.
-	 * This method calls <code>SwingUtilities#invokeAndWait</code>.
-	 * So never call this method in EDT! 
-	 * 
-	 * @return false when user don't want to download file, otherwise true.
-	 * */
-	private boolean chooseSaveDest(String fileName, long size) {
+	private void download() {
+		// TODO Auto-generated method stub
+		status = "Downloading...";
 		
-		if(!Main.confirm("Download file?", "Download " + fileName + "(" + Main.formatFileSize(size) +")")) {
-			return false;
-		}
+	}
+
+
+	/**
+	 * 
+	 * This method calls <code>SwingUtilities#invokeAndWait</code>. <br>
+	 * So never call this method in EDT! <br>
+	 * If there's already same file exist in chosen path, ask to overwrite it or not.
+	 * 
+	 * @return <code>File</code> object that represents the destination file. created before returning.
+	 * 
+	 * */
+	private File chooseSaveDest(String fileName, long size) {
 		
 		try {
-			SwingUtilities.invokeAndWait(() -> {
-				
-				//TODO : Jfilechooser
-				
-			});
-			return true;
+			while (true) {
+				SwingUtilities.invokeAndWait(() -> {
+
+					// TODO : Jfilechooser
+
+				});
+
+				File dest = new File("");
+				if (dest.exists()) {
+					if (Main.confirm("File already exists!",
+							dest.getAbsolutePath() + " already exists! Want to overite?")) {
+						dest.delete();
+						dest.createNewFile();
+					} else {
+						continue;
+					}
+				}
+				return dest;
+			}
 		} catch (Exception e) {
-			Main.error("Exception in Thread working(SwingUtilities.invokeAndWait)",
-					e.getClass().getName() + "-%e%\nI'll consider you don't want to download this file", e);
+			Main.error("Exception in Creating file!",
+					e.getClass().getName() + "%e%\nThis file will be skipped.", e);
 		}
 		
-		return false;
+		return null;
 		
+	}
+
+
+	public String connectedTo() {
+		return ip + ":" + port;
 	}
 
 

@@ -59,10 +59,10 @@ public class SendingConnection {
 	}
 	
 	/**
-	 * Start process of sending files.
-	 * If the process somehow aborted in the middle of sending, it will throw a Exception.
-	 * When you try to re-call this method, it can't restart sending and it will throw a Exception,
-	 *  since it has no idea which position of the file it should send first.
+	 * Start process of sending files.<br>
+	 * If the process somehow aborted in the middle of sending, it will throw a Exception.<br>
+	 * When you try to re-call this method, it can't restart sending and it will throw a Exception,<br>
+	 *  since it has no idea which position of the file it should send first.<br>
 	 *   
 	 * @return <code>true</code> if all the sending process went well. if not, <code>false</code>
 	 * 
