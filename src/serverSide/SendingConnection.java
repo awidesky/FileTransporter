@@ -27,6 +27,7 @@ public class SendingConnection {
 	private long sizeOfNowSendingFile = 0L;
 	private long totalBytesTransfered = 0L;
 	private String status = "";
+	private String taskInfo;
 	
 	private ByteBuffer lenBuf = ByteBuffer.allocate(Main.lenBufSize);
 	
@@ -36,18 +37,17 @@ public class SendingConnection {
 		files = f;
 		status = "Preparing...";
 		
-		Main.log("Connected to " + getIP());
+		taskInfo = " Connection[" + getIP() + ":" + getPort() + "] ";
+		Main.log(taskInfo + "Connected to " + getIP());
 		
 	}
 	
 	public String getIP() {
-		
 		try {
 			return sendTo.socket().getInetAddress().toString();
 		} catch (NullPointerException e) {
 			return "NOT-CONNECTED";
 		}
-		
 	}
 
 	public int getPort() {
@@ -69,14 +69,14 @@ public class SendingConnection {
 	 * */
 	public boolean start() {
 
-		if(i != 0) new Exception("Connection to " + getIP() + " in port " + getPort() + "has aborted while sending " + getNowSendingFile().getAbsolutePath() + "!");
-		
+		//if(i != 0) new Exception("Connection to " + getIP() + " in port " + getPort() + "has aborted while sending " + getNowSendingFile().getAbsolutePath() + "!");
+		taskInfo = Thread.currentThread().toString() + taskInfo;
 		status = "Starting...";
 		ByteBuffer clientResponse = ByteBuffer.allocate(1); //if client chose to receive this file, this buffer will contain 1, otherwise 0.
 		
 		for(; i < files.length ; i++) {
 			
-			
+			Main.log(taskInfo + "Sending metadata of " +files[i].getName());
 			/* Send metadata */
 			ByteBuffer nameBuf = Main.charset.encode(files[i].getName());
 			
@@ -92,18 +92,21 @@ public class SendingConnection {
 				sent = 0L;
 				while ((sent += sendTo.write(nameBuf)) != nameBufSize);
 				
-				while (sendTo.read(clientResponse) != 1);
+				Main.readFromChannel(sendTo, clientResponse, "Tried to read response from client, but client disconnected!");
 				
 			} catch (IOException e1) {
-				Main.error("Failed to send metadata!", "Cannot send metadata :" + files[i].getAbsolutePath() + files[i].getName() + "\n%e%", e1);
+				Main.error(taskInfo + "Failed to send metadata!", "Cannot send metadata :" + files[i].getAbsolutePath() + files[i].getName() + "\n%e%", e1);
 				status = "ERROR!";
 				return false;
 			}
 			
 			if(clientResponse.get() == 0) { /* User don't want to download this file, skip it. */
+				Main.log(taskInfo + "Skip " +files[i].getName() + " because client wanted to.");
 				continue;
 			}
-			
+
+			Main.log(taskInfo + "Sending " +files[i].getName());
+			status = "Sending...";
 			progress = 0;
 			sizeOfNowSendingFile = files[i].length();
 			totalBytesTransfered = 0L;
@@ -117,28 +120,29 @@ public class SendingConnection {
 						transferFromByteCount = srcFile.transferTo(totalBytesTransfered,
 								Math.min(Main.transferChunk, sizeOfNowSendingFile - totalBytesTransfered), sendTo);
 					} catch (IOException e) {
-						Main.error("Failed to send file!", "Cannot send file :" + files[i].getAbsolutePath() + files[i].getName() + " ("
+						Main.error(taskInfo + "Failed to send file!", "Cannot send file :" + files[i].getAbsolutePath() + files[i].getName() + " ("
 								+ (int) (100.0 * totalBytesTransfered / sizeOfNowSendingFile) + "%)\n%e%", e);
 						status = "ERROR!";
 						return false;
 					}
 
 					if (transferFromByteCount < 0) {
-						break;
+						/** Probably dead code, since if either socket is closed, <code>FileChannel#transferTo</code> throws ClosedChannelException */
+						throw new IOException("Client disconnected! (socketChannel.write returned with -1)");
 					}
 					totalBytesTransfered += transferFromByteCount;
 					progress = (int) (100.0 * totalBytesTransfered / sizeOfNowSendingFile);
-					Main.log("Sent " + transferFromByteCount + "byte (" + progress + "%) from " + files[i].getName() + " to " + getIP());
+					Main.log(taskInfo + "Sent " + transferFromByteCount + "byte (" + progress + "%) from " + files[i].getName() + " to " + getIP());
 					status = "Uploading... (" + (i + 1) + "/" + files.length + ")";
 					ClientListTableModel.getinstance().updated(this);
 				}
 
 			} catch (IOException e) {
-				Main.error("Failed to handle file!", "Cannot handle file :" + files[i].getAbsolutePath() + files[i].getName() + "\n%e%", e);
+				Main.error(taskInfo + "Failed to send file!", "Cannot send file :" + files[i].getAbsolutePath() + files[i].getName() + "\n%e%", e);
 				status = "ERROR!";
 				return false;
 			}
-		    
+			Main.log(taskInfo + "Sent " +files[i].getName() + " successfully!");
 			
 		} //for end
 		

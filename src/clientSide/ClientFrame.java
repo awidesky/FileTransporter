@@ -94,7 +94,8 @@ public class ClientFrame extends JFrame {
 			port_t.setEnabled(false);
 			*/
 			
-			Main.queueJob(new FileReceiver(ip_t.getText(), port_t.getText()));
+			FileReceiver fr = new FileReceiver(ip_t.getText(), port_t.getText());
+			fr.setFuture(Main.queueJob(fr));
 			
 		});
 		cleanCompleted.setBounds(13, 206, cleanCompleted.getPreferredSize().width, cleanCompleted.getPreferredSize().height);

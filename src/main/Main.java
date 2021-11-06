@@ -6,11 +6,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -276,9 +279,9 @@ public class Main {
 	/**
 	 * Submits a job to main worker thread pool
 	 * */
-	public static void queueJob(Runnable job) {
+	public static Future<?> queueJob(Runnable job) {
 
-		threadPool.submit(job);
+		return threadPool.submit(job);
 		
 	}
 
@@ -302,5 +305,27 @@ public class Main {
 		return isStop;
 	}
 	
-	
+	/**
+	 * <p>A utility function that fills a <code>ByteBuffer</code> by reading bytes from <code>ReadableByteChannel</code>.
+	 * <p>This method does not check about buffer's size.
+	 * <p>This method closes <code>ch</code> when the peer is disconnected.</p>
+	 * 
+	 * @param ch A <code>ReadableByteChannel</code> to read from.
+	 * @param buf <code>ByteBuffer</code> to store read bytes.
+	 * @param whenClosed When peer disconnected, this method throws <code>new IOException(whenClosed)</code>.
+	 * 
+	 * @throws IOException 
+	 * */
+	public static void readFromChannel(ReadableByteChannel ch, ByteBuffer buf, String whenClosed) throws IOException {
+		int total = 0;
+		int size = buf.remaining();
+		while(true) {
+			int l = ch.read(buf);
+			if(l == -1) {
+				ch.close();
+				throw new IOException(whenClosed);
+			}
+			if((total += l) == size) return;
+		}
+	}
 }

@@ -124,6 +124,11 @@ public class DownloadingListTableModel extends AbstractTableModel {
 		return rows;
 	}
 
+	public void updated(FileReceiver r) {
+
+		SwingUtilities.invokeLater(() -> { fireTableRowsUpdated(rows.indexOf(r), rows.indexOf(r)); });
+
+	}
 	public static DownloadingListTableModel getinstance() {
 
 		return instance ;
