@@ -94,7 +94,7 @@ public class FileReceiver implements Runnable{
 			Main.log(taskInfo + "Connecting to Server...");
 			ch.configureBlocking(true);
 			ch.connect(address);
-
+			
 			DownloadingListTableModel.getinstance().addTask(this);
 			
 			while (!isAborted) {

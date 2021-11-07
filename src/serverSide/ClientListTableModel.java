@@ -104,7 +104,6 @@ public class ClientListTableModel extends AbstractTableModel {
 		rows.forEach((s) -> {
 
 			Main.queueJob(() -> {
-
 				s.disconnect();
 			});
 			

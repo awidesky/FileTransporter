@@ -2,11 +2,14 @@ package serverSide;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.file.StandardOpenOption;
+import java.util.concurrent.Future;
 
 import main.Main;
 
@@ -17,10 +20,14 @@ import main.Main;
  *  
  *  
  * */
-public class SendingConnection {
+public class SendingConnection implements Runnable{
 
 	private File[] files;
 	private SocketChannel sendTo;
+	private InetSocketAddress remoteAddr;
+	
+	private Future<?> future;
+	private boolean isAborted = false;
 	
 	private int i = 0;
 	private int progress = 0;
@@ -37,25 +44,47 @@ public class SendingConnection {
 		files = f;
 		status = "Preparing...";
 		
+		try {
+			remoteAddr = (InetSocketAddress)sendTo.getRemoteAddress();
+		} catch (IOException e) {
+			
+			try {
+				if(sendTo != null)sendTo.close();
+			} catch (IOException e1) {
+				Main.log(e1);
+			}
+			
+			Main.error("Not connected with client!", "It seems like a client tried to connect, but not connected successfully\n%e%", e);
+			isAborted = true;
+			
+			try {
+				remoteAddr = new InetSocketAddress(InetAddress.getLocalHost(), -1);
+			} catch (UnknownHostException e1) {
+				Main.log(e1);
+			}
+			
+			return;
+		}
+			
 		taskInfo = " Connection[" + getIP() + ":" + getPort() + "] ";
 		Main.log(taskInfo + "Connected to " + getIP());
 		
 	}
 	
-	public String getIP() {
-		try {
-			return sendTo.socket().getInetAddress().toString();
-		} catch (NullPointerException e) {
-			return "NOT-CONNECTED";
+	public void setFuture(Future<?> f) {
+		this.future = f;
+		if(isAborted) {
+			Main.error("Connection lost!", "Not connected to client!", null);
+			disconnect();
 		}
+	}
+	
+	public String getIP() {
+		return remoteAddr.getAddress().getHostAddress();
 	}
 
 	public int getPort() {
-		try {
-			return ((InetSocketAddress)sendTo.getRemoteAddress()).getPort();
-		} catch (IOException e) {
-			return -1;
-		}
+		return remoteAddr.getPort();
 	}
 	
 	/**
@@ -67,7 +96,7 @@ public class SendingConnection {
 	 * @return <code>true</code> if all the sending process went well. if not, <code>false</code>
 	 * 
 	 * */
-	public boolean start() {
+	public void run() {
 
 		//if(i != 0) new Exception("Connection to " + getIP() + " in port " + getPort() + "has aborted while sending " + getNowSendingFile().getAbsolutePath() + "!");
 		taskInfo = Thread.currentThread().toString() + taskInfo;
@@ -95,9 +124,13 @@ public class SendingConnection {
 				Main.readFromChannel(sendTo, clientResponse, "Tried to read response from client, but client disconnected!");
 				
 			} catch (IOException e1) {
-				Main.error(taskInfo + "Failed to send metadata!", "Cannot send metadata :" + files[i].getAbsolutePath() + files[i].getName() + "\n%e%", e1);
+				String str = "Cannot send metadata :" + files[i].getAbsolutePath() + files[i].getName() + "\n";
+				if(isAborted) {
+					Main.log(taskInfo + str +"Thread interrupted while connecting with :" + remoteAddr.toString() + ", and download aborted!\n");
+				}
+				Main.error(taskInfo + "Failed to send metadata!", str + "%e%", e1);
 				status = "ERROR!";
-				return false;
+				return;
 			}
 			
 			if(clientResponse.get() == 0) { /* User don't want to download this file, skip it. */
@@ -116,14 +149,18 @@ public class SendingConnection {
 				while (totalBytesTransfered < sizeOfNowSendingFile) {
 					long transferFromByteCount;
 
-					try {
+					try { // TODO : try 합치기?
 						transferFromByteCount = srcFile.transferTo(totalBytesTransfered,
 								Math.min(Main.transferChunk, sizeOfNowSendingFile - totalBytesTransfered), sendTo);
-					} catch (IOException e) {
-						Main.error(taskInfo + "Failed to send file!", "Cannot send file :" + files[i].getAbsolutePath() + files[i].getName() + " ("
-								+ (int) (100.0 * totalBytesTransfered / sizeOfNowSendingFile) + "%)\n%e%", e);
+					} catch (IOException e) { 
+						String str =  "Cannot send file :" + files[i].getAbsolutePath() + files[i].getName() + " ("
+								+ (int) (100.0 * totalBytesTransfered / sizeOfNowSendingFile) + "%)\n";
+						if(isAborted) { //TODO : disconnect는 유저 선택임을 assure
+							Main.log(taskInfo + "Thread interrupted while connecting with :" + sendTo.getRemoteAddress().toString() + ", and download aborted!\n" + str);
+						}
+						Main.error(taskInfo + "Failed to send file!", str + "%e%", e);
 						status = "ERROR!";
-						return false;
+						return;
 					}
 
 					if (transferFromByteCount < 0) {
@@ -140,16 +177,21 @@ public class SendingConnection {
 			} catch (IOException e) {
 				Main.error(taskInfo + "Failed to send file!", "Cannot send file :" + files[i].getAbsolutePath() + files[i].getName() + "\n%e%", e);
 				status = "ERROR!";
-				return false;
+				return;
 			}
 			Main.log(taskInfo + "Sent " +files[i].getName() + " successfully!");
 			
 		} //for end
 		
-		disconnect();
+		try {
+			sendTo.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		status = "Completed!";
 
-		return true;
+		return;
 	}
 
 	public File getNowSendingFile() {
@@ -173,16 +215,11 @@ public class SendingConnection {
 	}
 
 	/**
-	 * This method is invoked in EDT
+	 * note : This method is invoked in EDT
 	 * */
 	public void disconnect() {
-		
-		try {
-			sendTo.close();
-		} catch (IOException e) {
-			Main.error("Cannot close connection!", "Can't close connection to " + getIP() + "\n%e%", e);
-		}
-		
+		isAborted = true;
+		future.cancel(false); //cancel the task
 	}
 
 	public String getStatus() {
