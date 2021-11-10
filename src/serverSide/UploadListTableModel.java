@@ -54,18 +54,7 @@ public class UploadListTableModel extends AbstractTableModel {
 			return rows.get(rowIndex).getName();
 			
 		case 1: // Size
-			
-			long size = rows.get(rowIndex).length();
-			long loged = (long) Math.log(size);
-			if (loged < 4) {
-				return size + " byte";
-			} else if (loged < 7) {
-				return size / 1024 + " KB";
-			} else if (loged < 10) {
-				return size / (1024 * 1024) + " MB";
-			} else {
-				return size / (1024 * 1024 * 1024) + " GB";
-			}
+			return Main.formatFileSize(rows.get(rowIndex).length());
 		}
 		
 		Main.error("Invalid column index!", "Invalid column index : " + columnIndex, null);

@@ -7,21 +7,21 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
 
-<AnchorPane prefHeight="236.0" prefWidth="331.0" xmlns="http://javafx.com/javafx/16" xmlns:fx="http://javafx.com/fxml/1">
+<AnchorPane prefHeight="236.0" prefWidth="331.0" xmlns="http://javafx.com/javafx/15.0.1" xmlns:fx="http://javafx.com/fxml/1">
    <children>
       <TextField layoutX="220.0" layoutY="10.0" prefHeight="22.0" prefWidth="97.0" />
       <Label layoutX="14.0" layoutY="14.0" text="IP : " />
       <Label layoutX="180.0" layoutY="14.0" text="Port :" />
       <TextField layoutX="35.0" layoutY="10.0" prefHeight="22.0" prefWidth="136.0" />
-      <Button layoutX="136.0" layoutY="47.0" mnemonicParsing="false" text="Connect" />
+      <Button layoutX="136.0" layoutY="47.0" mnemonicParsing="false" prefHeight="22.0" prefWidth="65.0" text="Connect" />
       <TableView layoutX="13.0" layoutY="82.0" prefHeight="117.0" prefWidth="305.0">
         <columns>
           <TableColumn prefWidth="224.0" text="Destination" />
           <TableColumn text="Status" />
         </columns>
       </TableView>
-      <Button layoutX="13.0" layoutY="206.0" mnemonicParsing="false" text="clean completed" />
-      <Button layoutX="129.0" layoutY="206.0" mnemonicParsing="false" text="disconnect selected" />
-      <Button layoutX="261.0" layoutY="206.0" mnemonicParsing="false" text="clear all" />
+      <Button layoutX="13.0" layoutY="206.0" mnemonicParsing="false" prefHeight="22.0" prefWidth="103.0" text="clean completed" />
+      <Button layoutX="129.0" layoutY="206.0" mnemonicParsing="false" prefHeight="22.0" prefWidth="120.0" text="disconnect selected" />
+      <Button layoutX="261.0" layoutY="206.0" mnemonicParsing="false" prefHeight="22.0" prefWidth="57.0" text="clear all" />
    </children>
 </AnchorPane>

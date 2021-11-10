@@ -96,9 +96,11 @@ public class ClientListTableModel extends AbstractTableModel {
 	 * */
 	public boolean clearAll() {
 
+		if(rows.isEmpty()) return true;
+		
 		rows.removeIf(SendingConnection::isFinished);
 		
-		if (rows.isEmpty() || !Main.confirm("Before clearing!", "Some task(s) are not done!\nDisconnect all connection(s) and clear list?"))
+		if (!Main.confirm("Before clearing!", "Some task(s) are not done!\nDisconnect all connection(s) and clear list?"))
 				return false;
 
 		rows.forEach((s) -> {

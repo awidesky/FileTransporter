@@ -66,7 +66,7 @@ public class SendingConnection implements Runnable{
 			return;
 		}
 			
-		taskInfo = " Connection[" + getIP() + ":" + getPort() + "] ";
+		taskInfo = "Server|Connection[" + getIP() + ":" + getPort() + "] ";
 		Main.log(taskInfo + "Connected to " + getIP());
 		
 	}

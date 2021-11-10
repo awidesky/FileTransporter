@@ -15,6 +15,7 @@ public class FileSender implements Runnable {
 
 	private int port;
 	private File[] files;
+	private static String thisIP = null;
 
 	public FileSender(int port, File[] files) {
 
@@ -25,10 +26,12 @@ public class FileSender implements Runnable {
 
 	public String getselfIP() {
 
+		if(thisIP != null) return thisIP;
+		
 		try (BufferedReader in = new BufferedReader(
 				new InputStreamReader(new URL("http://checkip.amazonaws.com").openStream()))) {
 
-			return in.readLine();
+			return (thisIP = in.readLine());
 
 		} catch (IOException e) {
 
@@ -47,7 +50,7 @@ public class FileSender implements Runnable {
 
 			while (!Main.isAppStopped()) {
 
-				Main.log("Ready for connection...");
+				Main.log("Server|Ready for connection...");
 
 				try {
 					SendingConnection sc = new SendingConnection(server.accept(), files);

@@ -2,6 +2,7 @@ package clientSide;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
@@ -49,7 +50,7 @@ public class FileReceiver implements Runnable{
 		
 		this.ip = ip;
 		this.port = Integer.parseInt(port);
-		taskInfo = " Connection[" + ip + ":" + port + "] ";
+		taskInfo = "Client|Connection[" + ip + ":" + port + "] ";
 		
 	}
 	
@@ -241,9 +242,10 @@ public class FileReceiver implements Runnable{
 				
 				return dest;
 			}
+			
 		} catch (Exception e) {
 			Main.error(taskInfo + "Exception in Creating file!",
-					e.getClass().getName() + "%e%\nThis file will be skipped.", e);
+					e.getClass().getName() + "%e%\nThis file will be skipped.", (e instanceof InvocationTargetException) ? (Exception)e.getCause() : e);
 		}
 		
 		return null;

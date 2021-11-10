@@ -60,20 +60,20 @@ public class Main {
 			if(args[i].startsWith("--transferChunk=")) {
 				String str = args[i].substring("--transferChunk=".length(), args[i].length());
 				
-				if(str.substring(str.length() - 1).equalsIgnoreCase("b")) { 
-					Main.transferChunk = Integer.parseInt(str.substring(0, str.length() - 1));
-				} else if(str.substring(str.length() - 2).equalsIgnoreCase("kb")) {  
+				if(str.substring(str.length() - 2).equalsIgnoreCase("kb")) {  
 					Main.transferChunk = Integer.parseInt(str.substring(0, str.length() - 2)) * 1024;
 				} else if(str.substring(str.length() - 2).equalsIgnoreCase("mb")) { 
 					Main.transferChunk = Integer.parseInt(str.substring(0, str.length() - 2)) * 1024 * 1024;
 				} else if(str.substring(str.length() - 2).equalsIgnoreCase("gb")) {  
 					Main.transferChunk = Integer.parseInt(str.substring(0, str.length() - 2)) * 1024 * 1024 * 1024;
+				} else if(str.substring(str.length() - 1).equalsIgnoreCase("b")) { 
+					Main.transferChunk = Integer.parseInt(str.substring(0, str.length() - 1));
 				} else {
 					System.out.println("invalid argument : " +  args[i]);
 					printUsageAndKill();
 				}
 				
-				Main.log("transferChunk = " + Main.transferChunk + "byte"); //log might queued but not be printed
+				Main.log("transferChunk = " + Main.formatFileSize(Main.transferChunk) + "byte"); //log might queued but not be printed
 				
 			} else if (args[i].equals("--server")) {
 				
@@ -189,9 +189,9 @@ public class Main {
 				
 				return result.get();
 
-			} catch (InterruptedException | InvocationTargetException e) {
+			} catch (Exception e) {
 				error("Exception in Thread working(SwingWorker)",
-						e.getClass().getName() + "-%e%\nI'll consider you chose \"no\"", e);
+						e.getClass().getName() + "-%e%\nI'll consider you chose \"no\"", (e instanceof InvocationTargetException) ? (Exception)e.getCause() : e);
 			}
 
 			return false;
@@ -262,20 +262,28 @@ public class Main {
 	public static void kill(int i) {
 
 		isStop = true;
-		try {
-			SwingUtilities.invokeAndWait(() -> {
-				frame.dispose();
-				confirmDialogParent.dispose();
-			});
-		} catch (InvocationTargetException | InterruptedException e) {
-			e.printStackTrace();
-		}
 		
+		if (SwingUtilities.isEventDispatchThread()) {
+			disposeAll();
+		} else {
+			try {
+				SwingUtilities.invokeAndWait(Main::disposeAll);
+			} catch (InvocationTargetException e) {
+				e.getCause().printStackTrace();
+			} catch (InterruptedException e1) {
+				e1.printStackTrace();
+			}
+		}
+
 		log("killed with exit code : " + i);
 		System.exit(i);
 		
 	}
 
+	private static void disposeAll() {
+		if(frame != null) frame.dispose();
+		if(confirmDialogParent != null) confirmDialogParent.dispose();
+	}
 	/**
 	 * Submits a job to main worker thread pool
 	 * */
@@ -290,15 +298,15 @@ public class Main {
 		switch ((int)(Math.log(length) / Math.log(1024))) {
 		
 		case 0:
-			return length + " byte";
+			return String.format("%.2f", length) + " byte";
 		case 1:
-			return (length / 1024.0) + " KB";
+			return String.format("%.2f", length / 1024.0) + " KB";
 		case 2:
-			return (length / (1024.0 * 1024)) + " MB";
+			return String.format("%.2f", length / (1024.0 * 1024)) + " MB";
 		case 3:
-			return (length / (1024.0 * 1024 * 1024)) + " GB";
+			return String.format("%.2f", length / (1024.0 * 1024 * 1024)) + " GB";
 		}
-		return (length / (1024.0 * 1024 * 1024 * 1024)) + " TB";
+		return String.format("%.2f", length / (1024.0 * 1024 * 1024 * 1024)) + " TB";
 	}
 
 	public static boolean isAppStopped() {

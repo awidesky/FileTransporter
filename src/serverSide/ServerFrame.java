@@ -1,6 +1,7 @@
 package serverSide;
 
 import java.awt.Dimension;
+import java.awt.Insets;
 import java.awt.Toolkit;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
@@ -30,7 +31,7 @@ public class ServerFrame extends JFrame {
 	private static final long serialVersionUID = 8677739105321293193L;
 	
 	private JFileChooser chooser = new JFileChooser();;
-	private JDialog dialog;
+	private JDialog dialog = new JDialog();;
 	
 	private JLabel ip = new JLabel("IP : ");
 	private JLabel port = new JLabel("Port : ");
@@ -94,7 +95,7 @@ public class ServerFrame extends JFrame {
 			}
 
 		});
-		setSize(331, 423); //add more height than fxml because it does not think about title length
+		setSize(350, 450); //add more height than fxml because it does not think about title length
 		Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
 		setLocation(dim.width/2-getSize().width/2, dim.height/2-getSize().height/2);
 		setLayout(null);
@@ -150,18 +151,27 @@ public class ServerFrame extends JFrame {
 		
 		
 		ip.setBounds(14, 14, ip.getPreferredSize().width, ip.getPreferredSize().height);
-		port.setBounds(180, 44, port.getPreferredSize().width, port.getPreferredSize().height);
+		port.setBounds(180, 14, port.getPreferredSize().width, port.getPreferredSize().height);
 		total.setBounds(10, 170, total.getPreferredSize().width, total.getPreferredSize().height);
 		
-		ip_t.setBounds(35, 10, ip_t.getPreferredSize().width, ip_t.getPreferredSize().height);
-		port_t.setBounds(220, 10, port_t.getPreferredSize().width, port_t.getPreferredSize().height);
+		ip_t.setBounds(35, 10, 120, 22);
+		port_t.setBounds(220, 10, 97, 22);
 		
-		start.setBounds(128, 202, start.getPreferredSize().width, start.getPreferredSize().height);
-		cleanCompleted.setBounds(14, 367, cleanCompleted.getPreferredSize().width, cleanCompleted.getPreferredSize().height);
-		disconnectAll.setBounds(261, 367, disconnectAll.getPreferredSize().width, disconnectAll.getPreferredSize().height);
-		deleteSelectedFile.setBounds(225, 166, deleteSelectedFile.getPreferredSize().width, deleteSelectedFile.getPreferredSize().height);
-		addFile.setBounds(154, 166, addFile.getPreferredSize().width, addFile.getPreferredSize().height);
-		disconnectSelected.setBounds(130, 367, disconnectSelected.getPreferredSize().width, disconnectSelected.getPreferredSize().height);
+		//Font f = UIManager.getDefaults().getFont("Button.font").deriveFont((float) 12.0);
+		
+		start.setBounds(128, 202, 80, 22);
+		start.setMargin(new Insets(0, 0, 0, 0));
+		cleanCompleted.setBounds(10, 367, 115, 22);
+		cleanCompleted.setMargin(new Insets(0, 0, 0, 0));
+		disconnectAll.setBounds(260, 367, 65, 22);
+		disconnectAll.setMargin(new Insets(0, 0, 0, 0));
+		disconnectSelected.setBounds(130, 367, 125, 22);
+		disconnectSelected.setMargin(new Insets(0, 0, 0, 0));
+		
+		addFile.setBounds(143, 166, 75, 22);
+		addFile.setMargin(new Insets(0, 0, 0, 0));
+		deleteSelectedFile.setBounds(225, 166, 100, 22);
+		deleteSelectedFile.setMargin(new Insets(0, 0, 0, 0));
 		
 		start.addActionListener((e) -> {
 			
@@ -212,7 +222,7 @@ public class ServerFrame extends JFrame {
 		fileListTable.setModel(UploadListTableModel.getinstance());
 		fileListTable.setAutoCreateColumnsFromModel(false);
 		fileListTable.setFillsViewportHeight(true);
-		fileListTable.getColumnModel().getColumn(0).setPreferredWidth(224);
+		fileListTable.getColumnModel().getColumn(0).setPreferredWidth(200);
 		fileListTable.getColumnModel().getColumn(1).setPreferredWidth(80);
 		JScrollPane scrollPane = new JScrollPane(fileListTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 		scrollPane.setBounds(13, 45, 305, 117);

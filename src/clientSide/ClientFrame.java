@@ -1,6 +1,7 @@
 package clientSide;
 
 import java.awt.Dimension;
+import java.awt.Insets;
 import java.awt.Toolkit;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
@@ -81,10 +82,18 @@ public class ClientFrame extends JFrame {
 		ip.setBounds(14, 14, ip.getPreferredSize().width, ip.getPreferredSize().height);
 		port.setBounds(180, 44, port.getPreferredSize().width, port.getPreferredSize().height);
 		
-		ip_t.setBounds(35, 10, ip_t.getPreferredSize().width, ip_t.getPreferredSize().height);
-		port_t.setBounds(220, 10, port_t.getPreferredSize().width, port_t.getPreferredSize().height);
+		ip_t.setBounds(35, 10, 120, 22);
+		port_t.setBounds(220, 10, 97, 22);
 
-		connect.setBounds(136, 47, connect.getPreferredSize().width, connect.getPreferredSize().height);
+		connect.setBounds(136, 47, 65, 22);
+		connect.setMargin(new Insets(0, 0, 0, 0));
+		cleanCompleted.setBounds(13, 206, 105, 22);
+		cleanCompleted.setMargin(new Insets(0, 0, 0, 0));
+		disconnectSelected.setBounds(129, 206, 120, 22);
+		disconnectSelected.setMargin(new Insets(0, 0, 0, 0));
+		clearAll.setBounds(261, 206, 60, 22);
+		cleanCompleted.setMargin(new Insets(0, 0, 0, 0));
+
 		connect.addActionListener((e) -> {
 			
 			/*
@@ -98,15 +107,12 @@ public class ClientFrame extends JFrame {
 			fr.setFuture(Main.queueJob(fr));
 			
 		});
-		cleanCompleted.setBounds(13, 206, cleanCompleted.getPreferredSize().width, cleanCompleted.getPreferredSize().height);
 		cleanCompleted.addActionListener((e) -> {
 			DownloadingListTableModel.getinstance().clearDone();
 		});
-		disconnectSelected.setBounds(129, 206, disconnectSelected.getPreferredSize().width, disconnectSelected.getPreferredSize().height);
 		disconnectSelected.addActionListener((e) -> {
 			DownloadingListTableModel.getinstance().disconectSelected(table.getSelectedRows());
 		});
-		clearAll.setBounds(261, 206, clearAll.getPreferredSize().width, clearAll.getPreferredSize().height);
 		clearAll.addActionListener((e) -> {
 			DownloadingListTableModel.getinstance().clearAll();
 		});
