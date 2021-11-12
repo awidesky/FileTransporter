@@ -35,7 +35,7 @@ public class ServerFrame extends JFrame {
 	
 	private JLabel ip = new JLabel("IP : ");
 	private JLabel port = new JLabel("Port : ");
-	private JLabel total= new JLabel("Total : ");
+	private JLabel total= new JLabel("Total : 0.00 byte");
 
 	private JTextField ip_t = new JTextField();
 	private JTextField port_t = new JTextField();

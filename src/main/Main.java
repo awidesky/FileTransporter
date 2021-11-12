@@ -295,6 +295,8 @@ public class Main {
 
 	public static String formatFileSize(long length) {
 		
+		if(length == 0L) return "0.00 byte";
+		
 		switch ((int)(Math.log(length) / Math.log(1024))) {
 		
 		case 0:
