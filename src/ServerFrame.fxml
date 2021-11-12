@@ -23,7 +23,7 @@
       <Button layoutX="14.0" layoutY="367.0" mnemonicParsing="false" prefHeight="22.0" prefWidth="103.0" text="clean completed" />
       <Button layoutX="130.0" layoutY="367.0" mnemonicParsing="false" prefHeight="22.0" prefWidth="119.0" text="disconnect selected" />
       <Button layoutX="261.0" layoutY="367.0" mnemonicParsing="false" prefHeight="22.0" prefWidth="58.0" text="clear all" />
-      <Label layoutX="10.0" layoutY="170.0" text="Total : " />
+      <Label layoutX="10.0" layoutY="170.0" prefHeight="14.0" prefWidth="119.0" text="Total : " />
       <Button layoutX="213.0" layoutY="166.0" mnemonicParsing="false" prefHeight="22.0" prefWidth="103.0" text="delete selected" />
       <Button layoutX="137.0" layoutY="166.0" mnemonicParsing="false" prefHeight="22.0" prefWidth="68.0" text="add file..." />
       <TableView layoutX="16.0" layoutY="231.0" prefHeight="127.0" prefWidth="305.0">

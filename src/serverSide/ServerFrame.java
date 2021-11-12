@@ -152,7 +152,7 @@ public class ServerFrame extends JFrame {
 		
 		ip.setBounds(14, 14, ip.getPreferredSize().width, ip.getPreferredSize().height);
 		port.setBounds(180, 14, port.getPreferredSize().width, port.getPreferredSize().height);
-		total.setBounds(10, 170, total.getPreferredSize().width, total.getPreferredSize().height);
+		total.setBounds(10, 170, 120, total.getPreferredSize().height);
 		
 		ip_t.setBounds(35, 10, 120, 22);
 		port_t.setBounds(220, 10, 97, 22);
@@ -203,6 +203,7 @@ public class ServerFrame extends JFrame {
 		deleteSelectedFile.addActionListener((e) -> {
 			
 			UploadListTableModel.getinstance().deleteSelected(fileListTable.getSelectedRows());
+			total.setText("Total : " + Main.formatFileSize(UploadListTableModel.getinstance().getFileSizeTotal()));
 			
 		});
 		addFile.addActionListener((e) -> {
@@ -211,7 +212,7 @@ public class ServerFrame extends JFrame {
 			List<File> temp = Arrays.asList(chooser.getSelectedFiles());
 			chooser.setCurrentDirectory(temp.get(0).getAbsoluteFile().getParentFile());
 			UploadListTableModel.getinstance().addFiles(temp);
-			
+			total.setText("Total : " + Main.formatFileSize(UploadListTableModel.getinstance().getFileSizeTotal()));
 		});
 		disconnectSelected.addActionListener((e) -> {
 			

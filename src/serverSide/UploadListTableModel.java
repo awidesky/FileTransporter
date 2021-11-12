@@ -98,6 +98,10 @@ public class UploadListTableModel extends AbstractTableModel {
 		return instance;
 	}
 
+	public long getFileSizeTotal() {
+		return rows.stream().mapToLong(File::length).sum();
+	}
+
 
 
 }

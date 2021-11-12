@@ -1,0 +1,2 @@
+transferChunk = 1.00 MBbyte
+ClientFrame was closed

@@ -1,0 +1,3 @@
+transferChunk = 1.00 MBbyte
+ClientFrame was closed
+killed with exit code : 0
