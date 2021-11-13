@@ -54,7 +54,7 @@ public class ClientListTableModel extends AbstractTableModel {
 		case 1: // Now sending...
 			return rows.get(rowIndex).getNowSendingFileString();
 		case 2: // Progress
-			return rows.get(rowIndex).getProgressString();
+			return rows.get(rowIndex).getProgress();
 		}
 		
 		Main.error("Invalid column index!", "Invalid column index in DownloadingListTableModel : " + columnIndex, null);
