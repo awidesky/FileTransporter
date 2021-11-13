@@ -162,6 +162,7 @@ public class FileReceiver implements Runnable{
 
 		Main.log("Downloading");
 		status = "Downloading...";
+		progress = 0;
 		long sizeOfNowSendingFile = destination.length();
 		
 		try (FileChannel srcFile = FileChannel.open(destination.toPath(), StandardOpenOption.WRITE)) {
@@ -255,6 +256,10 @@ public class FileReceiver implements Runnable{
 
 	public String connectedTo() {
 		return ip + ":" + port;
+	}
+
+	public int getProgress() {
+		return progress;
 	}
 
 

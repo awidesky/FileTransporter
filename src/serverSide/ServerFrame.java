@@ -72,7 +72,7 @@ public class ServerFrame extends JFrame {
 			int column = columnAtPoint(e.getPoint());
 			if (row == -1) return "";
 			if (column == 2) return Main.formatFileSize(ClientListTableModel.getinstance().getData().get(row).getNowSendingFile().length());
-			else return ClientListTableModel.getinstance().getData().get(row).getStatus();
+			else return ClientListTableModel.getinstance().getData().get(row).getProgressString();
 		}
 		
 	};
