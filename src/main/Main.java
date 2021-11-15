@@ -24,9 +24,6 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
-import clientSide.ClientFrame;
-import serverSide.ServerFrame;
-
 
 
 public class Main {
@@ -36,7 +33,7 @@ public class Main {
 	private static boolean isStop = false;
 	private static PrintWriter logTo;
 	private static ExecutorService threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-	public static long transferChunk;
+	public static long transferChunk = 0L;
 	
 	public static final String version = "v1.0.0";
 	
@@ -49,47 +46,9 @@ public class Main {
 	
 	public static void main(String[] args) {
 		
-		if(args.length == 0) {
+		if(args[0].equals("--help")) {
 			printUsageAndKill();
 		}
-
-		boolean isServer = false;
-		
-		for(int i = 0; i < args.length ; i++) {
-			
-			if(args[i].startsWith("--transferChunk=")) {
-				String str = args[i].substring("--transferChunk=".length(), args[i].length());
-				
-				if(str.substring(str.length() - 2).equalsIgnoreCase("kb")) {  
-					Main.transferChunk = Integer.parseInt(str.substring(0, str.length() - 2)) * 1024;
-				} else if(str.substring(str.length() - 2).equalsIgnoreCase("mb")) { 
-					Main.transferChunk = Integer.parseInt(str.substring(0, str.length() - 2)) * 1024 * 1024;
-				} else if(str.substring(str.length() - 2).equalsIgnoreCase("gb")) {  
-					Main.transferChunk = Integer.parseInt(str.substring(0, str.length() - 2)) * 1024 * 1024 * 1024;
-				} else if(str.substring(str.length() - 1).equalsIgnoreCase("b")) { 
-					Main.transferChunk = Integer.parseInt(str.substring(0, str.length() - 1));
-				} else {
-					System.out.println("invalid argument : " +  args[i]);
-					printUsageAndKill();
-				}
-				
-				Main.log("transferChunk = " + Main.formatFileSize(Main.transferChunk) + "byte"); //log might queued but not be printed
-				
-			} else if (args[i].equals("--server")) {
-				
-				isServer = true;
-			
-			} else if (args[i].equals("--client")) {
-				
-				isServer = false;
-
-			} else {
-				System.out.println("invalid argument : " +  args[i]);
-				printUsageAndKill();
-			}
-			
-		}
-		
 		
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -100,11 +59,36 @@ public class Main {
 		
 		prepareLogFile();
 		
-		if(isServer) {
-			SwingUtilities.invokeLater(() -> frame = new ServerFrame());
-		} else {
-			SwingUtilities.invokeLater(() -> frame = new ClientFrame());
+		SwingUtilities.invokeLater(InitFrame::new);
+		
+	}
+	
+	public static void setFrame(JFrame frame) {
+		if(Main.transferChunk == 0L) {
+			error("Invalide argument!", "Invalid TransferChunk!", null);
+			printUsageAndKill();
 		}
+		Main.log("transferChunk = " + Main.formatFileSize(Main.transferChunk) + "byte"); //log might queued but not be printed
+		Main.frame = frame;
+	}
+	
+	public static void setTransferChunk(String tpCh) {
+		
+		if (tpCh.substring(tpCh.length() - 2).equalsIgnoreCase("kb")) {
+			Main.transferChunk = Integer.parseInt(tpCh.substring(0, tpCh.length() - 2)) * 1024;
+		} else if (tpCh.substring(tpCh.length() - 2).equalsIgnoreCase("mb")) {
+			Main.transferChunk = Integer.parseInt(tpCh.substring(0, tpCh.length() - 2)) * 1024 * 1024;
+		} else if (tpCh.substring(tpCh.length() - 2).equalsIgnoreCase("gb")) {
+			Main.transferChunk = Integer.parseInt(tpCh.substring(0, tpCh.length() - 2)) * 1024 * 1024 * 1024;
+		} else if (tpCh.substring(tpCh.length() - 1).equalsIgnoreCase("b")) {
+			Main.transferChunk = Integer.parseInt(tpCh.substring(0, tpCh.length() - 1));
+		} else {
+			System.out.println("invalid argument : " + tpCh);
+			printUsageAndKill();
+		}
+		
+		Main.log("transferChunk = " + Main.formatFileSize(Main.transferChunk) + "byte"); //log might queued but not be printed
+		
 	}
 	
 	public static void printUsageAndKill() {
@@ -338,4 +322,6 @@ public class Main {
 			if((total += l) == size) return;
 		}
 	}
+
+
 }
