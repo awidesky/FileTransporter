@@ -37,7 +37,7 @@ public class ServerFrame extends JFrame {
 	private JLabel port = new JLabel("Port : ");
 	private JLabel total= new JLabel("Total : 0.00 byte");
 
-	private JTextField ip_t = new JTextField();
+	private JTextField ip_t = new JTextField("localhost");
 	private JTextField port_t = new JTextField();
 	
 	private JButton start = new JButton("start server");
