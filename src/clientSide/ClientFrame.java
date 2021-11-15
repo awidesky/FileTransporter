@@ -103,6 +103,8 @@ public class ClientFrame extends JFrame {
 			ip_t.setEnabled(false);
 			port_t.setEnabled(false);
 			
+			connect.setEnabled(false);
+			
 			FileReceiver fr = new FileReceiver(ip_t.getText(), port_t.getText());
 			fr.setFuture(Main.queueJob(fr));
 			

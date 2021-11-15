@@ -176,11 +176,15 @@ public class ServerFrame extends JFrame {
 		
 		start.addActionListener((e) -> {
 			
+			ip.setEnabled(false);
+			port.setEnabled(false);
+			ip_t.setEnabled(false);
+			port_t.setEnabled(false);
+			
 			start.setEnabled(false);
 			fileListTable.setEnabled(false);
 			addFile.setEnabled(false);
 			deleteSelectedFile.setEnabled(false);
-			
 			
 			clientListTable.setEnabled(true);
 			
