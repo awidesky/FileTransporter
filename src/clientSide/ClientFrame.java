@@ -96,7 +96,19 @@ public class ClientFrame extends JFrame {
 		clearAll.setMargin(new Insets(0, 0, 0, 0));
 
 		connect.addActionListener((e) -> {
-			//TODO : check ip and port
+
+			if(ip_t.getText().equals("")) {
+		    	Main.error("invalid ip!", "Invalid ip!", null);
+		    	return;
+			}
+			
+			int i;
+			try {
+		        i = Integer.parseInt(port_t.getText());
+		    } catch (NumberFormatException nfe) {
+		    	Main.error("invalid port number!", "Invalid port number!\n%e%", nfe);
+		    	return;
+		    }
 			
 			ip.setEnabled(false);
 			port.setEnabled(false);
@@ -105,7 +117,7 @@ public class ClientFrame extends JFrame {
 			
 			connect.setEnabled(false);
 			
-			FileReceiver fr = new FileReceiver(ip_t.getText(), port_t.getText());
+			FileReceiver fr = new FileReceiver(ip_t.getText(), i);
 			fr.setFuture(Main.queueJob(fr));
 			
 		});

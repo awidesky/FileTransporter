@@ -46,10 +46,10 @@ public class FileReceiver implements Runnable{
 		chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 	}
 	
-	public FileReceiver(String ip, String port) {
+	public FileReceiver(String ip, int port) {
 		
 		this.ip = ip;
-		this.port = Integer.parseInt(port);
+		this.port = port;
 		taskInfo = "Client|Connection[" + ip + ":" + port + "] ";
 		
 	}

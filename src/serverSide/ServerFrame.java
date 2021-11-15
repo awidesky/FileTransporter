@@ -176,6 +176,19 @@ public class ServerFrame extends JFrame {
 		
 		start.addActionListener((e) -> {
 			
+			if(ip_t.getText().equals("")) {
+		    	Main.error("invalid ip!", "Invalid ip!", null);
+		    	return;
+			}
+			
+			int i;
+			try {
+		        i = Integer.parseInt(port_t.getText());
+		    } catch (NumberFormatException nfe) {
+		    	Main.error("invalid port number!", "Invalid port number!\n%e%", nfe);
+		    	return;
+		    }
+			
 			ip.setEnabled(false);
 			port.setEnabled(false);
 			ip_t.setEnabled(false);
@@ -191,8 +204,8 @@ public class ServerFrame extends JFrame {
 			cleanCompleted.setEnabled(true);
 			disconnectSelected.setEnabled(true);
 			disconnectAll.setEnabled(true);
-			//TODO : check ip and port
-			Main.queueJob(new FileSender(Integer.parseInt(port_t.getText()), UploadListTableModel.getinstance().getData().toArray(new File[]{})));
+
+			Main.queueJob(new FileSender(i, UploadListTableModel.getinstance().getData().toArray(new File[]{})));
 			
 		});
 		cleanCompleted.addActionListener((e) -> {
