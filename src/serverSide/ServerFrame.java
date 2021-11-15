@@ -161,6 +161,7 @@ public class ServerFrame extends JFrame {
 		
 		start.setBounds(128, 202, 80, 22);
 		start.setMargin(new Insets(0, 0, 0, 0));
+		
 		cleanCompleted.setBounds(10, 367, 115, 22);
 		cleanCompleted.setMargin(new Insets(0, 0, 0, 0));
 		disconnectAll.setBounds(260, 367, 65, 22);
@@ -186,7 +187,7 @@ public class ServerFrame extends JFrame {
 			cleanCompleted.setEnabled(true);
 			disconnectSelected.setEnabled(true);
 			disconnectAll.setEnabled(true);
-			
+			//TODO : check ip and port
 			Main.queueJob(new FileSender(Integer.parseInt(port_t.getText()), UploadListTableModel.getinstance().getData().toArray(new File[]{})));
 			
 		});

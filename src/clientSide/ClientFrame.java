@@ -72,7 +72,7 @@ public class ClientFrame extends JFrame {
 			}
 
 		});
-		setSize(331, 256); //add more height than fxml because it does not think about title length
+		setSize(350, 270); //add more height than fxml because it does not think about title length
 		Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
 		setLocation(dim.width/2-getSize().width/2, dim.height/2-getSize().height/2);
 		setLayout(null);
@@ -80,28 +80,28 @@ public class ClientFrame extends JFrame {
 
 		
 		ip.setBounds(14, 14, ip.getPreferredSize().width, ip.getPreferredSize().height);
-		port.setBounds(180, 44, port.getPreferredSize().width, port.getPreferredSize().height);
+		port.setBounds(180, 14, port.getPreferredSize().width, port.getPreferredSize().height);
 		
 		ip_t.setBounds(35, 10, 120, 22);
 		port_t.setBounds(220, 10, 97, 22);
 
 		connect.setBounds(136, 47, 65, 22);
 		connect.setMargin(new Insets(0, 0, 0, 0));
-		cleanCompleted.setBounds(13, 206, 105, 22);
+		
+		cleanCompleted.setBounds(10, 206, 115, 22);
 		cleanCompleted.setMargin(new Insets(0, 0, 0, 0));
-		disconnectSelected.setBounds(129, 206, 120, 22);
+		disconnectSelected.setBounds(130, 206, 125, 22);
 		disconnectSelected.setMargin(new Insets(0, 0, 0, 0));
-		clearAll.setBounds(261, 206, 60, 22);
-		cleanCompleted.setMargin(new Insets(0, 0, 0, 0));
+		clearAll.setBounds(260, 206, 65, 22);
+		clearAll.setMargin(new Insets(0, 0, 0, 0));
 
 		connect.addActionListener((e) -> {
+			//TODO : check ip and port
 			
-			/*
 			ip.setEnabled(false);
 			port.setEnabled(false);
 			ip_t.setEnabled(false);
 			port_t.setEnabled(false);
-			*/
 			
 			FileReceiver fr = new FileReceiver(ip_t.getText(), port_t.getText());
 			fr.setFuture(Main.queueJob(fr));
