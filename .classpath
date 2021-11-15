@@ -5,6 +5,6 @@
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry excluding="ClientFrame.fxml|ServerFrame.fxml" kind="src" path="src"/>
+	<classpathentry excluding="*.fxml" kind="src" path="src"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
