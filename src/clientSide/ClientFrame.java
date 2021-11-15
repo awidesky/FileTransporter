@@ -56,7 +56,7 @@ public class ClientFrame extends JFrame {
 	
 	public ClientFrame() {
 		
-		setTitle("FileTransporter client " + Main.version);
+		setTitle("FileTransporter(client) " + Main.version);
 		//setIconImage(new ImageIcon().getImage());
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		addWindowListener(new WindowAdapter() {
