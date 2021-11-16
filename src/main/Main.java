@@ -76,25 +76,11 @@ public class Main {
 		} 
 		
 		if(transferChunk == 0L) {
-			System.out.println("invalid argument for TransferChunk : " + tpCh);
-			System.out.println("TransferChunk sets size of a chunk to send at a time(affect to sending progress bar), type like \"512B\" or \"256mb\" (b/kb/mb/gb. case ignored)");
+			System.err.println("invalid argument for TransferChunk : " + tpCh);
+			System.err.println("TransferChunk sets size of a chunk to send at a time(affect to sending progress bar), type like \"512B\" or \"256mb\" (b/kb/mb/gb. case ignored)");
 		} else {
 			Main.log("transferChunk = " + Main.formatFileSize(Main.transferChunk) + "byte"); //log might queued but not be printed
 		}
-	}
-	
-	@Deprecated
-	public static void printUsageAndKill() {
-		
-		System.out.println("usage : java -jar FileTransporter.jar [option]");
-		System.out.println();
-		System.out.println("option :");
-		System.out.printf("  %s\t%s%n", "--server","Run as server(sender)");
-		System.out.printf("  %s\t%s%n", "--client","Run as client(receiver)");
-		System.out.printf("  %s\t%s%n%s%n", "--transferChunk",	"Set size of a chunk to send at a time(affect to sending progress bar)",
-																"Can used like \"--transferChunk=512B\" or \"--transferChunk=256mb\" (b/kb/mb/gb. case ignored)");
-		kill(1);
-		
 	}
 	
 	/**
