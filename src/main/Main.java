@@ -46,10 +46,6 @@ public class Main {
 	
 	public static void main(String[] args) {
 		
-		if(args.length != 0 && args[0].equals("--help")) {
-			printUsageAndKill();
-		}
-		
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException
@@ -64,33 +60,30 @@ public class Main {
 	}
 	
 	public static void setFrame(JFrame frame) {
-		if(Main.transferChunk == 0L) {
-			error("Invalide argument!", "Invalid TransferChunk!", null);
-			printUsageAndKill();
-		}
-		Main.log("transferChunk = " + Main.formatFileSize(Main.transferChunk) + "byte"); //log might queued but not be printed
 		Main.frame = frame;
 	}
 	
 	public static void setTransferChunk(String tpCh) {
 		
 		if (tpCh.substring(tpCh.length() - 2).equalsIgnoreCase("kb")) {
-			Main.transferChunk = Integer.parseInt(tpCh.substring(0, tpCh.length() - 2)) * 1024;
+			transferChunk = Integer.parseInt(tpCh.substring(0, tpCh.length() - 2)) * 1024;
 		} else if (tpCh.substring(tpCh.length() - 2).equalsIgnoreCase("mb")) {
-			Main.transferChunk = Integer.parseInt(tpCh.substring(0, tpCh.length() - 2)) * 1024 * 1024;
+			transferChunk = Integer.parseInt(tpCh.substring(0, tpCh.length() - 2)) * 1024 * 1024;
 		} else if (tpCh.substring(tpCh.length() - 2).equalsIgnoreCase("gb")) {
-			Main.transferChunk = Integer.parseInt(tpCh.substring(0, tpCh.length() - 2)) * 1024 * 1024 * 1024;
+			transferChunk = Integer.parseInt(tpCh.substring(0, tpCh.length() - 2)) * 1024 * 1024 * 1024;
 		} else if (tpCh.substring(tpCh.length() - 1).equalsIgnoreCase("b")) {
-			Main.transferChunk = Integer.parseInt(tpCh.substring(0, tpCh.length() - 1));
+			transferChunk = Integer.parseInt(tpCh.substring(0, tpCh.length() - 1));
+		} 
+		
+		if(transferChunk == 0L) {
+			System.out.println("invalid argument for TransferChunk : " + tpCh);
+			System.out.println("TransferChunk sets size of a chunk to send at a time(affect to sending progress bar), type like \"512B\" or \"256mb\" (b/kb/mb/gb. case ignored)");
 		} else {
-			System.out.println("invalid argument : " + tpCh);
-			printUsageAndKill();
+			Main.log("transferChunk = " + Main.formatFileSize(Main.transferChunk) + "byte"); //log might queued but not be printed
 		}
-		
-		Main.log("transferChunk = " + Main.formatFileSize(Main.transferChunk) + "byte"); //log might queued but not be printed
-		
 	}
 	
+	@Deprecated
 	public static void printUsageAndKill() {
 		
 		System.out.println("usage : java -jar FileTransporter.jar [option]");
