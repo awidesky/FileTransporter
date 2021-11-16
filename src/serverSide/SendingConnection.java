@@ -149,19 +149,9 @@ public class SendingConnection implements Runnable{
 				while (totalBytesTransfered < sizeOfNowSendingFile) {
 					long transferFromByteCount;
 
-					try { // TODO : try 합치기?
-						transferFromByteCount = srcFile.transferTo(totalBytesTransfered,
+					transferFromByteCount = srcFile.transferTo(totalBytesTransfered,
 								Math.min(Main.transferChunk, sizeOfNowSendingFile - totalBytesTransfered), sendTo);
-					} catch (IOException e) { 
-						String str =  "Cannot send file :" + files[i].getAbsolutePath() + files[i].getName() + " ("
-								+ (int) (100.0 * totalBytesTransfered / sizeOfNowSendingFile) + "%)\n";
-						if(isAborted) { //TODO : disconnect는 유저 선택임을 assure
-							Main.log(taskInfo + "Thread interrupted while connecting with :" + sendTo.getRemoteAddress().toString() + ", and download aborted!\n" + str);
-						}
-						Main.error(taskInfo + "Failed to send file!", str + "%e%", e);
-						status = "ERROR!";
-						return;
-					}
+
 
 					if (transferFromByteCount < 0) {
 						/** Probably dead code, since if either socket is closed, <code>FileChannel#transferTo</code> throws ClosedChannelException */
@@ -175,7 +165,12 @@ public class SendingConnection implements Runnable{
 				}
 
 			} catch (IOException e) {
-				Main.error(taskInfo + "Failed to send file!", "Cannot send file :" + files[i].getAbsolutePath() + files[i].getName() + "\n%e%", e);
+				String str = "Cannot send file :" + files[i].getAbsolutePath() + files[i].getName() + " ("
+						+ (int) (100.0 * totalBytesTransfered / sizeOfNowSendingFile) + "%)\n";
+				if(isAborted) { //TODO : disconnect는 유저 선택임을 assure
+					Main.log(taskInfo + "Thread interrupted while connecting with :" + getIP() + ":" + getPort() + ", and download aborted!\n" + str);
+				}
+				Main.error(taskInfo + "Failed to send file!", str, e);
 				status = "ERROR!";
 				return;
 			}
