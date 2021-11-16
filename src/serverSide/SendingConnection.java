@@ -150,7 +150,9 @@ public class SendingConnection implements Runnable{
 					long transferFromByteCount;
 
 					transferFromByteCount = srcFile.transferTo(totalBytesTransfered,
-							Math.min(Main.transferChunk, sizeOfNowSendingFile - totalBytesTransfered), sendTo);
+
+					Math.min(Main.transferChunk, sizeOfNowSendingFile - totalBytesTransfered), sendTo);
+
 
 					if (transferFromByteCount < 0) {
 						/** Probably dead code, since if either socket is closed, <code>FileChannel#transferTo</code> throws ClosedChannelException */
@@ -171,6 +173,7 @@ public class SendingConnection implements Runnable{
 					Main.log(taskInfo + "Thread interrupted while connecting with :" + getIP() + ":" + getPort() + ", and download aborted!\n" + errStr);
 				}
 				Main.error(taskInfo + "Failed to send file!", errStr + "%e%", e);
+
 				status = "ERROR!";
 				return;
 				
