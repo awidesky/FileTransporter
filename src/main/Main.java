@@ -7,10 +7,12 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.AsynchronousChannelGroup;
+import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -33,7 +35,8 @@ public class Main {
 	private static boolean isStop = false;
 	private static PrintWriter logTo;
 	private static ExecutorService threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-	public static long transferChunk = 0L;
+	public static AsynchronousChannelGroup channelGroup;
+	public static int transferChunk = 0;
 	
 	public static final String version = "v1.0.0";
 	
@@ -43,6 +46,15 @@ public class Main {
 	private static final JDialog confirmDialogParent = new JDialog();
 	
 	private static JFrame frame;
+	
+	static {
+		 try {
+			channelGroup = AsynchronousChannelGroup.withThreadPool(Main.getThreadPool());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 	
 	public static void main(String[] args) {
 		
@@ -301,23 +313,29 @@ public class Main {
 	 * <p>This method does not check about buffer's size.
 	 * <p>This method closes <code>ch</code> when the peer is disconnected.</p>
 	 * 
-	 * @param ch A <code>ReadableByteChannel</code> to read from.
+	 * @param sendTo A <code>AsynchronousSocketChannel</code> to read from.
 	 * @param buf <code>ByteBuffer</code> to store read bytes.
 	 * @param whenClosed When peer disconnected, this method throws <code>new IOException(whenClosed)</code>.
 	 * 
 	 * @throws IOException 
+	 * @throws ExecutionException 
+	 * @throws InterruptedException 
 	 * */
-	public static void readFromChannel(ReadableByteChannel ch, ByteBuffer buf, String whenClosed) throws IOException {
+	public static void readFromChannel(AsynchronousSocketChannel sendTo, ByteBuffer buf, String whenClosed) throws IOException, InterruptedException, ExecutionException {
 		int total = 0;
 		int size = buf.remaining();
 		while(true) {
-			int l = ch.read(buf);
+			int l = sendTo.read(buf).get();
 			if(l == -1) {
-				ch.close();
+				sendTo.close();
 				throw new IOException(whenClosed);
 			}
 			if((total += l) == size) return;
 		}
+	}
+
+	public static ExecutorService getThreadPool() {
+		return threadPool;
 	}
 
 

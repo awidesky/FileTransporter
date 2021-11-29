@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SocketChannel;
@@ -92,11 +93,10 @@ public class FileReceiver implements Runnable{
 		String fileName = null;
 		InetSocketAddress address = new InetSocketAddress(ip, port);
 		boolean gotMetadata = false; // is metadata received?
-		try (SocketChannel ch = SocketChannel.open()) {
+		try (AsynchronousSocketChannel ch = AsynchronousSocketChannel.open(Main.channelGroup)) {
 
 			Main.log(taskInfo + "Connecting to Server...");
-			ch.configureBlocking(true);
-			ch.connect(address);
+			ch.connect(address).get();
 			
 			DownloadingListTableModel.getinstance().addTask(this);
 			
@@ -109,10 +109,7 @@ public class FileReceiver implements Runnable{
 				long transferred = 0L;
 				long[] lenData = new long[2]; // first is length of file name, and second is length of the file(both
 												// counted in byte).
-				if (!ch.isConnected()) {
-					Main.information("Connection closed by server!", "Connection to " + ip + ":" + port + " closed by server!");
-					resetCallback.run();
-				}
+				
 				Main.readFromChannel(ch, lenBuf, "Server disconnected while reading length of the file!");
 
 				lenBuf.asLongBuffer().get(lenData);
@@ -129,7 +126,7 @@ public class FileReceiver implements Runnable{
 					if(destination != null) {
 						responseBuf.put((byte) 1);
 						transferred = 0L;
-						while ((transferred += ch.write(responseBuf)) != 1);
+						while ((transferred += ch.write(responseBuf).get()) != 1);
 						if(!download(ch)) { //download failed!
 							throw new IOException("Download aborted while downloading " + destination.getAbsolutePath());
 						}
@@ -138,7 +135,7 @@ public class FileReceiver implements Runnable{
 				
 				responseBuf.put((byte) 0);
 				transferred = 0L;
-				while ((transferred += ch.write(responseBuf)) != 1);
+				while ((transferred += ch.write(responseBuf).get()) != 1);
 				continue;// user don't want to download this file.
 				
 			}
@@ -148,7 +145,7 @@ public class FileReceiver implements Runnable{
 			if(isAborted) Main.error(taskInfo + "Failed to receive files!", "Cannot receive file " + fileName + " from :" + address.toString() + ", and download aborted!\n%e%", inter);
 			else Main.error(taskInfo + "Failed to receive files!", "Thread interrupted while connecting with : " + address.toString() + ", and download aborted!\n%e%", inter);
 			status = "ERROR!";
-		} catch (IOException e) {
+		} catch (Exception e) {
 			status = "ERROR!";
 			if(!gotMetadata) Main.error(taskInfo + "Failed to receive metadata!", "Cannot receive metadata from :" + address.toString() + "\n%e%", e); 
 			else Main.error(taskInfo + "Failed to receive files!", "Cannot receive file from : " + address.toString() + "\n%e%", e);
@@ -163,7 +160,7 @@ public class FileReceiver implements Runnable{
 	 * 
 	 * @return <code>true</code> if download finished.
 	 * */
-	private boolean download(SocketChannel getFrom) {
+	private boolean download(AsynchronousSocketChannel ch) {
 
 		Main.log("Downloading");
 		status = "Downloading...";
@@ -177,7 +174,7 @@ public class FileReceiver implements Runnable{
 			while (totalBytesTransfered < sizeOfNowSendingFile) {
 				long transferFromByteCount = 0L;
 				try {
-					transferFromByteCount = srcFile.transferFrom(getFrom, totalBytesTransfered, 
+					transferFromByteCount = srcFile.transferFrom(ch, totalBytesTransfered, 
 							Math.min(Main.transferChunk, sizeOfNowSendingFile - totalBytesTransfered));
 				} catch (IOException e) {
 					Main.error(taskInfo + "Failed to receive file!", "Cannot receive file : " + destination.getAbsolutePath() + destination.getName() + " ("

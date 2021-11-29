@@ -6,7 +6,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.net.URL;
-import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.AsynchronousChannelGroup;
+import java.nio.channels.AsynchronousServerSocketChannel;
+import java.nio.channels.AsynchronousSocketChannel;
 import java.util.concurrent.Future;
 
 import main.Main;
@@ -19,7 +21,7 @@ public class FileSender implements Runnable {
 	private boolean aborted = false;
 	private static String thisIP = null;
 
-	private ServerSocketChannel server = null;
+	private AsynchronousServerSocketChannel server = null;
 	
 	public FileSender(int port, File[] files) {
 
@@ -48,21 +50,18 @@ public class FileSender implements Runnable {
 	@Override
 	public void run() {
 
-		try (ServerSocketChannel server = ServerSocketChannel.open()) {
+		try {
 			
-			server.configureBlocking(true);
+			server = AsynchronousServerSocketChannel.open(Main.channelGroup);
+
 			server.bind(new InetSocketAddress(port));
 			Main.information("Server opened!", "Server is wating connection from " + getselfIP() + ":" + port);
-			this.server = server;
 			
 			while (!Main.isAppStopped() && !future.isCancelled()) {
 
 				Main.log("Server|Ready for connection...");
-				System.out.println("22222");
-				Thread.sleep(10000);
-				System.out.println("s1111daf");
-				SendingConnection sc = new SendingConnection(server.accept(), files);
-				System.out.println("s222222daf");
+				Future<AsynchronousSocketChannel> fu = server.accept();
+				SendingConnection sc = new SendingConnection(fu.get(), files);
 				ClientListTableModel.getinstance().addConnection(sc);
 				Main.information("Connected to a client!", "Connected to " + sc.getIP() + ":" + sc.getPort());
 
@@ -74,19 +73,25 @@ public class FileSender implements Runnable {
 
 		} catch (Exception e) {
 			if(aborted)	Main.information("Server is stopped!", "Server is stopped by user, or server thread was interrupted!\nException message : " + e.getMessage());
-			else Main.error("Failed to connect!", "Failed to connect with an client!", e);
+			else Main.error("Failed to connect!", "Failed to connect with an client!\n%e%", e);
+		} finally {
+			if(server != null) { 
+				try {
+					server.close();
+				} catch (IOException e) {
+					Main.error("Failed to close server!", "%e%", e);
+				}
+			}
 		}
 
 	}
 
 	public void disconnect() {
 		aborted = true;
-		//future.cancel(true);
+		future.cancel(true);
 		if(server != null) {
 			try {
-				System.out.println("sdaf");
 				server.close();
-				System.out.println("sdaf");
 			} catch (IOException e) {
 				Main.error("Failed to close server!", "%e%" , e);
 			}

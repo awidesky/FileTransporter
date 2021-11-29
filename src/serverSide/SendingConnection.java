@@ -6,8 +6,8 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.FileChannel;
-import java.nio.channels.SocketChannel;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.Future;
 
@@ -23,7 +23,7 @@ import main.Main;
 public class SendingConnection implements Runnable{
 
 	private File[] files;
-	private SocketChannel sendTo;
+	private AsynchronousSocketChannel sendTo;
 	private InetSocketAddress remoteAddr;
 	
 	private Future<?> future;
@@ -37,10 +37,11 @@ public class SendingConnection implements Runnable{
 	private String taskInfo;
 	
 	private ByteBuffer lenBuf = ByteBuffer.allocate(Main.lenBufSize);
+	private ByteBuffer dataBuf = ByteBuffer.allocateDirect(Main.transferChunk);
 	
-	public SendingConnection(SocketChannel ch, File[] f) {
+	public SendingConnection(AsynchronousSocketChannel serverSocket, File[] f) {
 		
-		sendTo = ch;
+		sendTo = serverSocket;
 		files = f;
 		status = "Preparing...";
 		
@@ -116,14 +117,14 @@ public class SendingConnection implements Runnable{
 			try {
 				
 				long sent = 0L;
-				while ((sent += sendTo.write(lenBuf)) != Main.lenBufSize);
+				while ((sent += sendTo.write(lenBuf).get()) != Main.lenBufSize);
 				
 				sent = 0L;
-				while ((sent += sendTo.write(nameBuf)) != nameBufSize);
+				while ((sent += sendTo.write(nameBuf).get()) != nameBufSize);
 				
 				Main.readFromChannel(sendTo, clientResponse, "Tried to read response from client, but client disconnected!");
 				
-			} catch (IOException e1) {
+			} catch (Exception e1) {
 				String str = "Cannot send metadata : " + files[i].getAbsolutePath() + files[i].getName() + "\n";
 				if(isAborted) {
 					Main.log(taskInfo + str +"Thread interrupted while connecting with : " + remoteAddr.toString() + ", and download aborted!\n");
@@ -147,25 +148,34 @@ public class SendingConnection implements Runnable{
 			try (FileChannel srcFile = FileChannel.open(files[i].toPath(), StandardOpenOption.READ)) {
 
 				while (totalBytesTransfered < sizeOfNowSendingFile) {
-					long transferFromByteCount;
+					
+					long sent = 0L; // byte counter used while filling dataBuf
+					while (sent != Main.transferChunk) {
+						long sentNow = srcFile.read(dataBuf);
+						if(sentNow == -1) break;
+						sent += sentNow;
+					};
+					dataBuf.flip();
 
-					transferFromByteCount = srcFile.transferTo(totalBytesTransfered,
-
-					Math.min(Main.transferChunk, sizeOfNowSendingFile - totalBytesTransfered), sendTo);
-
-
-					if (transferFromByteCount < 0) {
-						/** Probably dead code, since if either socket is closed, <code>FileChannel#transferTo</code> throws ClosedChannelException */
-						throw new IOException("Client disconnected! (socketChannel.write returned with -1)");
+					while (dataBuf.hasRemaining()) {
+						long sentNow = sendTo.write(nameBuf).get();
+						if (sentNow < 0) {
+							/**
+							 * Probably dead code, since if either socket is closed,
+							 * <code>FileChannel#transferTo</code> throws ClosedChannelException
+							 */
+							throw new IOException("Client disconnected! (socketChannel.write returned with -1)");
+						}
+						totalBytesTransfered += sentNow;
 					}
-					totalBytesTransfered += transferFromByteCount;
+					
 					progress = (int) (100.0 * totalBytesTransfered / sizeOfNowSendingFile);
-					Main.log(taskInfo + "Sent " + transferFromByteCount + "byte (" + progress + "%) from " + files[i].getName() + " to " + getIP());
+					Main.log(taskInfo + "Sent " + totalBytesTransfered + "byte (" + progress + "%) from " + files[i].getName() + " to " + getIP());
 					status = "Uploading... (" + (i + 1) + "/" + files.length + ")";
 					ClientListTableModel.getinstance().updated(this);
 				}
 
-			} catch (IOException e) {
+			} catch (Exception e) {
 				
 				String errStr =  "Cannot send file : " + files[i].getAbsolutePath() + files[i].getName() + " ("
 						+ (int) (100.0 * totalBytesTransfered / sizeOfNowSendingFile) + "%)\n";
@@ -186,7 +196,7 @@ public class SendingConnection implements Runnable{
 		try {
 			sendTo.close();
 		} catch (IOException e) {
-			e.printStackTrace();
+			Main.error("Failed to close connection with client!", "%e%", e);
 		}
 		status = "Completed!";
 
