@@ -127,6 +127,24 @@ public class Main {
 		
 	}
 	
+	/**
+	 * show information dialog.
+	 * 
+	 * */
+	public static void information(String title, String content) {
+
+		Main.log("\n");
+		SwingUtilities.invokeLater(() -> {
+
+			final JDialog dialog = new JDialog();
+			dialog.setAlwaysOnTop(true);  
+			JOptionPane.showMessageDialog(dialog, content.replace("\n", System.lineSeparator()), title.replace("\n", System.lineSeparator()), JOptionPane.INFORMATION_MESSAGE);
+			
+		});
+		
+		Main.log("[GUI.information] " + title + "\n\t" + content);
+		
+	}
 
 	/**
 	 * Ask user to do confirm something with <code>JOptionPane{@link #showConfirmDialog(String, String, JDialog)}</code>. <br>

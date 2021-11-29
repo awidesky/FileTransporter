@@ -15,8 +15,12 @@ public class FileSender implements Runnable {
 
 	private int port;
 	private File[] files;
+	private Future<?> future;
+	private boolean aborted = false;
 	private static String thisIP = null;
 
+	private ServerSocketChannel server = null;
+	
 	public FileSender(int port, File[] files) {
 
 		this.port = port;
@@ -45,30 +49,51 @@ public class FileSender implements Runnable {
 	public void run() {
 
 		try (ServerSocketChannel server = ServerSocketChannel.open()) {
-
+			
+			server.configureBlocking(true);
 			server.bind(new InetSocketAddress(port));
-
-			while (!Main.isAppStopped()) {
+			Main.information("Server opened!", "Server is wating connection from " + getselfIP() + ":" + port);
+			this.server = server;
+			
+			while (!Main.isAppStopped() && !future.isCancelled()) {
 
 				Main.log("Server|Ready for connection...");
+				System.out.println("22222");
+				Thread.sleep(10000);
+				System.out.println("s1111daf");
+				SendingConnection sc = new SendingConnection(server.accept(), files);
+				System.out.println("s222222daf");
+				ClientListTableModel.getinstance().addConnection(sc);
+				Main.information("Connected to a client!", "Connected to " + sc.getIP() + ":" + sc.getPort());
 
-				try {
-					SendingConnection sc = new SendingConnection(server.accept(), files);
-					ClientListTableModel.getinstance().addConnection(sc);
-
-					Future<?> f = Main.queueJob(sc);
-					sc.setFuture(f);
-				} catch (IOException e) {
-					Main.error("Failed to connect!", "Failed to connect with an client!", e);
-				}
+				sc.setFuture(Main.queueJob(sc));
 
 			}
 
 			Main.log("Server stopped. closing server...");
 
-		} catch (IOException e) {
-			e.printStackTrace();
+		} catch (Exception e) {
+			if(aborted)	Main.information("Server is stopped!", "Server is stopped by user, or server thread was interrupted!\nException message : " + e.getMessage());
+			else Main.error("Failed to connect!", "Failed to connect with an client!", e);
 		}
 
+	}
+
+	public void disconnect() {
+		aborted = true;
+		//future.cancel(true);
+		if(server != null) {
+			try {
+				System.out.println("sdaf");
+				server.close();
+				System.out.println("sdaf");
+			} catch (IOException e) {
+				Main.error("Failed to close server!", "%e%" , e);
+			}
+		}
+	}
+
+	public void setFuture(Future<?> future) {
+		this.future = future;
 	}
 }

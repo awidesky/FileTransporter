@@ -117,7 +117,7 @@ public class ClientFrame extends JFrame {
 			
 			connect.setEnabled(false);
 			
-			FileReceiver fr = new FileReceiver(ip_t.getText(), i);
+			FileReceiver fr = new FileReceiver(ip_t.getText(), i, this::guiResetCallback);
 			fr.setFuture(Main.queueJob(fr));
 			
 		});
@@ -152,4 +152,18 @@ public class ClientFrame extends JFrame {
 		
 		setVisible(true);
 	}
+	
+
+	public void guiResetCallback() {
+		
+		ip.setEnabled(true);
+		port.setEnabled(true);
+		ip_t.setEnabled(true);
+		port_t.setEnabled(true);
+		
+		connect.setEnabled(true);
+		
+		DownloadingListTableModel.getinstance().clearAll();
+	}
+
 }

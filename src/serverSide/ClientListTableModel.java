@@ -100,16 +100,16 @@ public class ClientListTableModel extends AbstractTableModel {
 		
 		rows.removeIf(SendingConnection::isFinished);
 		
-		if (!Main.confirm("Before clearing!", "Some task(s) are not done!\nDisconnect all connection(s) and clear list?"))
+		if (!rows.isEmpty()) {
+			if (!Main.confirm("Before clearing!",
+					"Some task(s) are not done!\nDisconnect all connection(s) and clear list?"))
 				return false;
 
-		rows.forEach((s) -> {
-
-			Main.queueJob(() -> {
+			rows.forEach((s) -> {
 				s.disconnect();
 			});
-			
-		});
+		}
+		
 		rows.clear();
 		fireTableDataChanged();
 		return true;

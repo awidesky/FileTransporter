@@ -39,6 +39,7 @@ public class FileReceiver implements Runnable{
 	private ByteBuffer responseBuf = ByteBuffer.allocate(1);
 	private String taskInfo;
 	private Future<?> future;
+	private Runnable resetCallback;
 	
 	static {
 		dialog.setAlwaysOnTop(true);
@@ -46,10 +47,11 @@ public class FileReceiver implements Runnable{
 		chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 	}
 	
-	public FileReceiver(String ip, int port) {
+	public FileReceiver(String ip, int port, Runnable resetCallback) {
 		
 		this.ip = ip;
 		this.port = port;
+		this.resetCallback = resetCallback;
 		taskInfo = "Client|Connection[" + ip + ":" + port + "] ";
 		
 	}
@@ -80,7 +82,7 @@ public class FileReceiver implements Runnable{
 
 	public void disconnect() {
 		isAborted = true;
-		future.cancel(false); //cancel the task
+		future.cancel(true); //cancel the task
 	}
 
 	@Override
@@ -107,7 +109,10 @@ public class FileReceiver implements Runnable{
 				long transferred = 0L;
 				long[] lenData = new long[2]; // first is length of file name, and second is length of the file(both
 												// counted in byte).
-
+				if (!ch.isConnected()) {
+					Main.information("Connection closed by server!", "Connection to " + ip + ":" + port + " closed by server!");
+					resetCallback.run();
+				}
 				Main.readFromChannel(ch, lenBuf, "Server disconnected while reading length of the file!");
 
 				lenBuf.asLongBuffer().get(lenData);
@@ -141,12 +146,12 @@ public class FileReceiver implements Runnable{
 
 		} catch (ClosedByInterruptException inter) {
 			if(isAborted) Main.error(taskInfo + "Failed to receive files!", "Cannot receive file " + fileName + " from :" + address.toString() + ", and download aborted!\n%e%", inter);
-			else Main.error(taskInfo + "Failed to receive files!", "Thread interrupted while connecting with :" + address.toString() + ", and download aborted!\n%e%", inter);
+			else Main.error(taskInfo + "Failed to receive files!", "Thread interrupted while connecting with : " + address.toString() + ", and download aborted!\n%e%", inter);
 			status = "ERROR!";
 		} catch (IOException e) {
 			status = "ERROR!";
 			if(!gotMetadata) Main.error(taskInfo + "Failed to receive metadata!", "Cannot receive metadata from :" + address.toString() + "\n%e%", e); 
-			else Main.error(taskInfo + "Failed to receive files!", "Cannot receive file from :" + address.toString() + "\n%e%", e);
+			else Main.error(taskInfo + "Failed to receive files!", "Cannot receive file from : " + address.toString() + "\n%e%", e);
 		}
 
 		isDone = true;
@@ -175,7 +180,7 @@ public class FileReceiver implements Runnable{
 					transferFromByteCount = srcFile.transferFrom(getFrom, totalBytesTransfered, 
 							Math.min(Main.transferChunk, sizeOfNowSendingFile - totalBytesTransfered));
 				} catch (IOException e) {
-					Main.error(taskInfo + "Failed to receive file!", "Cannot receive file :" + destination.getAbsolutePath() + destination.getName() + " ("
+					Main.error(taskInfo + "Failed to receive file!", "Cannot receive file : " + destination.getAbsolutePath() + destination.getName() + " ("
 							+ (int) (100.0 * totalBytesTransfered / sizeOfNowSendingFile) + "%)\n%e%", e);
 					status = "ERROR!";
 					return false;
@@ -193,7 +198,7 @@ public class FileReceiver implements Runnable{
 			}
 
 		} catch (IOException e) {
-			Main.error(taskInfo + "Failed to handle file!", "Cannot handle file :" + destination.getAbsolutePath() + destination.getName() + "\n%e%", e);
+			Main.error(taskInfo + "Failed to handle file!", "Cannot handle file : " + destination.getAbsolutePath() + destination.getName() + "\n%e%", e);
 			status = "ERROR!";
 			return false;
 		}

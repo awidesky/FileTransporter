@@ -30,6 +30,8 @@ public class ServerFrame extends JFrame {
 
 	private static final long serialVersionUID = 8677739105321293193L;
 	
+	private FileSender server = null;
+	
 	private JFileChooser chooser = new JFileChooser();;
 	private JDialog dialog = new JDialog();;
 	
@@ -164,11 +166,13 @@ public class ServerFrame extends JFrame {
 		
 		cleanCompleted.setBounds(10, 367, 115, 22);
 		cleanCompleted.setMargin(new Insets(0, 0, 0, 0));
+		cleanCompleted.setEnabled(false);
 		disconnectAll.setBounds(260, 367, 65, 22);
 		disconnectAll.setMargin(new Insets(0, 0, 0, 0));
+		disconnectAll.setEnabled(false);
 		disconnectSelected.setBounds(130, 367, 125, 22);
 		disconnectSelected.setMargin(new Insets(0, 0, 0, 0));
-		
+		disconnectSelected.setEnabled(false);
 		addFile.setBounds(143, 166, 75, 22);
 		addFile.setMargin(new Insets(0, 0, 0, 0));
 		deleteSelectedFile.setBounds(225, 166, 100, 22);
@@ -176,36 +180,11 @@ public class ServerFrame extends JFrame {
 		
 		start.addActionListener((e) -> {
 			
-			if(ip_t.getText().equals("")) {
-		    	Main.error("invalid ip!", "Invalid ip!", null);
-		    	return;
+			if("start server".equals(start.getText())) {
+				startServer();
+			} else {
+				stopServer();
 			}
-			
-			int i;
-			try {
-		        i = Integer.parseInt(port_t.getText());
-		    } catch (NumberFormatException nfe) {
-		    	Main.error("invalid port number!", "Invalid port number!\n%e%", nfe);
-		    	return;
-		    }
-			
-			ip.setEnabled(false);
-			port.setEnabled(false);
-			ip_t.setEnabled(false);
-			port_t.setEnabled(false);
-			
-			start.setEnabled(false);
-			fileListTable.setEnabled(false);
-			addFile.setEnabled(false);
-			deleteSelectedFile.setEnabled(false);
-			
-			clientListTable.setEnabled(true);
-			
-			cleanCompleted.setEnabled(true);
-			disconnectSelected.setEnabled(true);
-			disconnectAll.setEnabled(true);
-
-			Main.queueJob(new FileSender(i, UploadListTableModel.getinstance().getData().toArray(new File[]{})));
 			
 		});
 		cleanCompleted.addActionListener((e) -> {
@@ -268,11 +247,99 @@ public class ServerFrame extends JFrame {
 		add(disconnectAll);
 		add(deleteSelectedFile);
 		add(addFile);
-		add(cleanCompleted);
 		add(disconnectSelected);
 		add(scrollPane);
 		add(scrollPane1);
 		
 		setVisible(true);
+	}
+	
+	public void startServer() {
+		
+		if(ip_t.getText().equals("")) {
+	    	Main.error("invalid ip!", "Invalid ip!", null);
+	    	return;
+		}
+		
+		if(UploadListTableModel.getinstance().getData().isEmpty()) {
+	    	Main.error("No file is chosen!", "There's no file to send!", null);
+	    	return;
+		}
+		
+		int i;
+		try {
+	        i = Integer.parseInt(port_t.getText());
+	        if(i < 0 || 65535 < i) throw new NumberFormatException("port number must be in between 0 ~ 65535");
+	    } catch (NumberFormatException nfe) {
+	    	Main.error("invalid port number!", "Invalid port number!\n%e%", nfe);
+	    	return;
+	    }
+		
+		ip.setEnabled(false);
+		port.setEnabled(false);
+		ip_t.setEnabled(false);
+		port_t.setEnabled(false);
+		
+		start.setText("stop server");
+		fileListTable.setEnabled(false);
+		addFile.setEnabled(false);
+		deleteSelectedFile.setEnabled(false);
+		
+		clientListTable.setEnabled(true);
+		
+		cleanCompleted.setEnabled(true);
+		disconnectSelected.setEnabled(true);
+		disconnectAll.setEnabled(true);
+
+		server = new FileSender(i, UploadListTableModel.getinstance().getData().toArray(new File[]{}));
+		server.setFuture(Main.queueJob(server));
+		
+	}
+	
+	public void stopServer() {
+
+		if(!Main.confirm("Stop server?", "Really want to stop the server?\nconnections may be lost!")) {
+			return;
+		}
+		
+		server.disconnect();
+		
+		ip.setEnabled(true);
+		port.setEnabled(true);
+		ip_t.setEnabled(true);
+		port_t.setEnabled(true);
+		
+		start.setText("start server");
+		fileListTable.setEnabled(true);
+		addFile.setEnabled(true);
+		deleteSelectedFile.setEnabled(true);
+		
+		clientListTable.setEnabled(false);
+		
+		cleanCompleted.setEnabled(false);
+		disconnectSelected.setEnabled(false);
+		disconnectAll.setEnabled(false);
+
+	}
+	
+	public void guiResetCallback() {
+		
+		ip.setEnabled(true);
+		port.setEnabled(true);
+		ip_t.setEnabled(true);
+		port_t.setEnabled(true);
+		
+		fileListTable.setEnabled(true);
+		addFile.setEnabled(true);
+		deleteSelectedFile.setEnabled(true);
+		
+		clientListTable.setEnabled(false);
+		
+		cleanCompleted.setEnabled(false);
+		disconnectSelected.setEnabled(false);
+		disconnectAll.setEnabled(false);
+		
+		ClientListTableModel.getinstance().clearAll();
+		
 	}
 }

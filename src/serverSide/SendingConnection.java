@@ -124,9 +124,9 @@ public class SendingConnection implements Runnable{
 				Main.readFromChannel(sendTo, clientResponse, "Tried to read response from client, but client disconnected!");
 				
 			} catch (IOException e1) {
-				String str = "Cannot send metadata :" + files[i].getAbsolutePath() + files[i].getName() + "\n";
+				String str = "Cannot send metadata : " + files[i].getAbsolutePath() + files[i].getName() + "\n";
 				if(isAborted) {
-					Main.log(taskInfo + str +"Thread interrupted while connecting with :" + remoteAddr.toString() + ", and download aborted!\n");
+					Main.log(taskInfo + str +"Thread interrupted while connecting with : " + remoteAddr.toString() + ", and download aborted!\n");
 				}
 				Main.error(taskInfo + "Failed to send metadata!", str + "%e%", e1);
 				status = "ERROR!";
@@ -167,10 +167,10 @@ public class SendingConnection implements Runnable{
 
 			} catch (IOException e) {
 				
-				String errStr =  "Cannot send file :" + files[i].getAbsolutePath() + files[i].getName() + " ("
+				String errStr =  "Cannot send file : " + files[i].getAbsolutePath() + files[i].getName() + " ("
 						+ (int) (100.0 * totalBytesTransfered / sizeOfNowSendingFile) + "%)\n";
 				if(isAborted) { 
-					Main.log(taskInfo + "Thread interrupted while connecting with :" + getIP() + ":" + getPort() + ", and download aborted!\n" + errStr);
+					Main.log(taskInfo + "Thread interrupted while connecting with : " + getIP() + ":" + getPort() + ", and download aborted!\n" + errStr);
 				}
 				Main.error(taskInfo + "Failed to send file!", errStr + "%e%", e);
 
@@ -218,7 +218,7 @@ public class SendingConnection implements Runnable{
 	 * */
 	public void disconnect() {
 		isAborted = true;
-		future.cancel(false); //cancel the task
+		future.cancel(true); //cancel the task
 	}
 
 	public String getStatus() {

@@ -99,12 +99,17 @@ public class DownloadingListTableModel extends AbstractTableModel {
 		if(rows.isEmpty()) return true;
 		
 		rows.removeIf(FileReceiver::isFinished);
-		if (!Main.confirm("Before clearing!", "Some task(s) are not done!\nDisconnect all connection(s) and clear list?"))
+
+		if (!rows.isEmpty()) {
+			if (!Main.confirm("Before clearing!",
+					"Some task(s) are not done!\nDisconnect all connection(s) and clear list?"))
 				return false;
 
-		rows.forEach((r) -> {
-			r.disconnect();
-		});
+			rows.forEach((r) -> {
+				r.disconnect();
+			});
+		}
+		
 		rows.clear();
 		fireTableDataChanged();
 		return true;
