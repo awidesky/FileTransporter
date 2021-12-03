@@ -8,7 +8,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.FileChannel;
-import java.nio.channels.SocketChannel;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
@@ -40,7 +39,9 @@ public class FileReceiver implements Runnable{
 	private ByteBuffer responseBuf = ByteBuffer.allocate(1);
 	private String taskInfo;
 	private Future<?> future;
+	/** called when process aborted/cancelled, so that the reset GUI to initial state */
 	private Runnable resetCallback;
+	private ByteBuffer dataBuf = ByteBuffer.allocateDirect(Main.transferChunk);
 	
 	static {
 		dialog.setAlwaysOnTop(true);
@@ -142,16 +143,20 @@ public class FileReceiver implements Runnable{
 			
 
 		} catch (ClosedByInterruptException inter) {
+			status = "ERROR!";
 			if(isAborted) Main.error(taskInfo + "Failed to receive files!", "Cannot receive file " + fileName + " from :" + address.toString() + ", and download aborted!\n%e%", inter);
 			else Main.error(taskInfo + "Failed to receive files!", "Thread interrupted while connecting with : " + address.toString() + ", and download aborted!\n%e%", inter);
-			status = "ERROR!";
 		} catch (Exception e) {
 			status = "ERROR!";
 			if(!gotMetadata) Main.error(taskInfo + "Failed to receive metadata!", "Cannot receive metadata from :" + address.toString() + "\n%e%", e); 
 			else Main.error(taskInfo + "Failed to receive files!", "Cannot receive file from : " + address.toString() + "\n%e%", e);
 		}
 
+		if (!"ERROR!".equals(status)) {
+			status = "Done!";
+		}
 		isDone = true;
+		resetCallback.run();
 		
 	}
 
@@ -172,23 +177,27 @@ public class FileReceiver implements Runnable{
 			totalBytesTransfered = 0L;
 
 			while (totalBytesTransfered < sizeOfNowSendingFile) {
+				
 				long transferFromByteCount = 0L;
 				try {
-					transferFromByteCount = srcFile.transferFrom(ch, totalBytesTransfered, 
-							Math.min(Main.transferChunk, sizeOfNowSendingFile - totalBytesTransfered));
-				} catch (IOException e) {
-					Main.error(taskInfo + "Failed to receive file!", "Cannot receive file : " + destination.getAbsolutePath() + destination.getName() + " ("
-							+ (int) (100.0 * totalBytesTransfered / sizeOfNowSendingFile) + "%)\n%e%", e);
-					status = "ERROR!";
+					
+					while (dataBuf.hasRemaining() && (ch.read(dataBuf).get() != -1)) {}
+					dataBuf.flip();
+
+					while (dataBuf.hasRemaining()) {
+						totalBytesTransfered += srcFile.write(dataBuf);
+					}
+
+				} catch (Exception e) {
+					Main.error(taskInfo + "Failed to receive file!",
+							"Cannot receive file : " + destination.getAbsolutePath() + destination.getName() + " ("
+									+ (int) Math.round(100.0 * totalBytesTransfered / sizeOfNowSendingFile) + "%)\n%e%",
+							e);
 					return false;
 				}
 
-				if (transferFromByteCount < 0) {
-					/** Probably dead code, since if either socket is closed, <code>FileChannel#transferFrom</code> throws ClosedChannelException */
-					throw new IOException("Server disconnected! (socketChannel.read returned with -1)");
-				}
 				totalBytesTransfered += transferFromByteCount;
-				progress = (int) (100.0 * totalBytesTransfered / sizeOfNowSendingFile);
+				progress = (int) Math.round(100.0 * totalBytesTransfered / sizeOfNowSendingFile);
 				Main.log(taskInfo + "Sent " + transferFromByteCount + "byte (" + progress + "%) from " + destination.getName() + " to " + ip);
 				status = "Downloading...";
 				DownloadingListTableModel.getinstance().updated(this);
@@ -196,7 +205,6 @@ public class FileReceiver implements Runnable{
 
 		} catch (IOException e) {
 			Main.error(taskInfo + "Failed to handle file!", "Cannot handle file : " + destination.getAbsolutePath() + destination.getName() + "\n%e%", e);
-			status = "ERROR!";
 			return false;
 		}
 		

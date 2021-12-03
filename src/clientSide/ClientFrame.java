@@ -13,6 +13,7 @@ import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 
 import main.Main;
 import main.ProgressRenderer;
@@ -153,17 +154,17 @@ public class ClientFrame extends JFrame {
 		setVisible(true);
 	}
 	
-
 	public void guiResetCallback() {
-		
-		ip.setEnabled(true);
-		port.setEnabled(true);
-		ip_t.setEnabled(true);
-		port_t.setEnabled(true);
-		
-		connect.setEnabled(true);
-		
-		DownloadingListTableModel.getinstance().clearAll();
+		SwingUtilities.invokeLater(() -> {
+			ip.setEnabled(true);
+			port.setEnabled(true);
+			ip_t.setEnabled(true);
+			port_t.setEnabled(true);
+
+			connect.setEnabled(true);
+
+			DownloadingListTableModel.getinstance().clearAll();
+		});
 	}
 
 }

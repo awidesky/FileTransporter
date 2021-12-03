@@ -116,11 +116,15 @@ public class SendingConnection implements Runnable{
 			
 			try {
 				
-				long sent = 0L;
-				while ((sent += sendTo.write(lenBuf).get()) != Main.lenBufSize);
+				while (lenBuf.hasRemaining()) {
+					sendTo.write(lenBuf).get();
+				}
+				lenBuf.clear();
 				
-				sent = 0L;
-				while ((sent += sendTo.write(nameBuf).get()) != nameBufSize);
+				while (nameBuf.hasRemaining()) {
+					sendTo.write(nameBuf).get();
+				}
+				nameBuf.clear();
 				
 				Main.readFromChannel(sendTo, clientResponse, "Tried to read response from client, but client disconnected!");
 				
@@ -149,12 +153,7 @@ public class SendingConnection implements Runnable{
 
 				while (totalBytesTransfered < sizeOfNowSendingFile) {
 					
-					long sent = 0L; // byte counter used while filling dataBuf
-					while (sent != Main.transferChunk) {
-						long sentNow = srcFile.read(dataBuf);
-						if(sentNow == -1) break;
-						sent += sentNow;
-					};
+					while (dataBuf.hasRemaining() && (srcFile.read(dataBuf) != -1)) {}
 					dataBuf.flip();
 
 					while (dataBuf.hasRemaining()) {
@@ -169,7 +168,7 @@ public class SendingConnection implements Runnable{
 						totalBytesTransfered += sentNow;
 					}
 					
-					progress = (int) (100.0 * totalBytesTransfered / sizeOfNowSendingFile);
+					progress = (int) Math.round(100.0 * totalBytesTransfered / sizeOfNowSendingFile);
 					Main.log(taskInfo + "Sent " + totalBytesTransfered + "byte (" + progress + "%) from " + files[i].getName() + " to " + getIP());
 					status = "Uploading... (" + (i + 1) + "/" + files.length + ")";
 					ClientListTableModel.getinstance().updated(this);
@@ -178,7 +177,7 @@ public class SendingConnection implements Runnable{
 			} catch (Exception e) {
 				
 				String errStr =  "Cannot send file : " + files[i].getAbsolutePath() + files[i].getName() + " ("
-						+ (int) (100.0 * totalBytesTransfered / sizeOfNowSendingFile) + "%)\n";
+						+ (int) Math.round(100.0 * totalBytesTransfered / sizeOfNowSendingFile) + "%)\n";
 				if(isAborted) { 
 					Main.log(taskInfo + "Thread interrupted while connecting with : " + getIP() + ":" + getPort() + ", and download aborted!\n" + errStr);
 				}
