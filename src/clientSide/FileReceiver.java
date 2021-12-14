@@ -107,7 +107,6 @@ public class FileReceiver implements Runnable{
 				responseBuf.clear();
 				
 				gotMetadata = false;
-				long transferred = 0L;
 				long[] lenData = new long[2]; // first is length of file name, and second is length of the file(both
 												// counted in byte).
 				
@@ -123,21 +122,25 @@ public class FileReceiver implements Runnable{
 				gotMetadata = true;
 
 				if(Main.confirm(taskInfo + "Download file?", "Download " + fileName + "(" + Main.formatFileSize(lenData[1]) +")")) { // Ask user where to save the received file.
-					destination = chooseSaveDest(fileName);
-					if(destination != null) {
+					
+					if((destination = chooseSaveDest(fileName)) != null) {
 						responseBuf.put((byte) 1);
-						transferred = 0L;
-						while ((transferred += ch.write(responseBuf).get()) != 1);
+						while (responseBuf.hasRemaining()) {
+							ch.write(responseBuf).get();
+						}
 						if(!download(ch)) { //download failed!
 							throw new IOException("Download aborted while downloading " + destination.getAbsolutePath());
 						}
 					}
+					
+				} else { // user don't want to download this file.
+
+					responseBuf.put((byte) 0);
+					while (responseBuf.hasRemaining()) {
+						ch.write(responseBuf).get();
+					}
+					
 				}
-				
-				responseBuf.put((byte) 0);
-				transferred = 0L;
-				while ((transferred += ch.write(responseBuf).get()) != 1);
-				continue;// user don't want to download this file.
 				
 			}
 			
