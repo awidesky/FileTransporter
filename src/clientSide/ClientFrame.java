@@ -41,15 +41,16 @@ public class ClientFrame extends JFrame {
 		private static final long serialVersionUID = -4271449717757183126L;
 
 		@Override
-		public String getToolTipText(MouseEvent e) { 
+		public String getToolTipText(MouseEvent e) {  table.getToolTipText();
 			int row = rowAtPoint(e.getPoint());
 			int column = columnAtPoint(e.getPoint());
-			if (row == -1) return "";
+			if (row == -1) return null; //TODO : check if returning null cause problem.
+			
+			DonwloadingStatus d = DownloadingListTableModel.getinstance().getData().get(row);
 			if (column == 0) {
-				return DownloadingListTableModel.getinstance().getData().get(row).getDest();
+				return d.getDest();
 			} else {
-				FileReceiver r = DownloadingListTableModel.getinstance().getData().get(row);
-				return r.getProgressString() + ", Connected to " + r.connectedTo();
+				return d.getProgressString() + ", Connected to " + FileReceiver.getInstance().connectedTo(); //TODO : \n here?
 			}
 		}
 		
@@ -99,7 +100,7 @@ public class ClientFrame extends JFrame {
 		connect.addActionListener((e) -> {
 
 			if(ip_t.getText().equals("")) {
-		    	Main.error("invalid ip!", "Invalid ip!", null);
+		    	Main.error("invalid ip!", "Invalid ip!", null, true);
 		    	return;
 			}
 			
@@ -107,7 +108,7 @@ public class ClientFrame extends JFrame {
 			try {
 		        i = Integer.parseInt(port_t.getText());
 		    } catch (NumberFormatException nfe) {
-		    	Main.error("invalid port number!", "Invalid port number!\n%e%", nfe);
+		    	Main.error("invalid port number!", "Invalid port number!\n%e%", nfe, true);
 		    	return;
 		    }
 			
@@ -118,7 +119,7 @@ public class ClientFrame extends JFrame {
 			
 			connect.setEnabled(false);
 			
-			FileReceiver fr = new FileReceiver(ip_t.getText(), i, this::guiResetCallback);
+			FileReceiver fr = FileReceiver.getInstance(ip_t.getText(), i, this::guiResetCallback);
 			fr.setFuture(Main.queueJob(fr));
 			
 		});

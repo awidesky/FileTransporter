@@ -20,14 +20,10 @@ import main.Main;
 
 public class FileReceiver implements Runnable{
 
+	private static final FileReceiver instance = new FileReceiver();
 	
-	private int progress = 0;
 	private long totalBytesTransfered;
-	private long sizeOfNowReceivingFile;
-	private boolean isDone = false;
 	private boolean isAborted = false;
-	private String status = ""; 
-	private File destination;
 	
 	private static JFileChooser chooser = new JFileChooser((String)null);
 	private static final JDialog dialog = new JDialog();
@@ -42,6 +38,8 @@ public class FileReceiver implements Runnable{
 	/** called when process aborted/cancelled, so that the reset GUI to initial state */
 	private Runnable resetCallback;
 	private ByteBuffer dataBuf = ByteBuffer.allocateDirect(Main.transferChunk);
+
+	private File destination;
 	
 	static {
 		dialog.setAlwaysOnTop(true);
@@ -49,39 +47,28 @@ public class FileReceiver implements Runnable{
 		chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 	}
 	
-	public FileReceiver(String ip, int port, Runnable resetCallback) {
+	public FileReceiver() {}	
+	
+	public static FileReceiver getInstance(String ip, int port, Runnable resetCallback) {
 		
-		this.ip = ip;
-		this.port = port;
-		this.resetCallback = resetCallback;
-		taskInfo = "Client|Connection[" + ip + ":" + port + "] ";
+		instance.ip = ip;
+		instance.port = port;
+		instance.resetCallback = resetCallback;
+		instance.taskInfo = "Client|Connection[" + ip + ":" + port + "] ";
+		
+		return instance;
 		
 	}
+	
+	public static FileReceiver getInstance() {
+		return instance;
+	}
+
 	
 	public void setFuture(Future<?> f) {
 		this.future = f;
 	}
 	
-	public boolean isFinished() {
-		return isDone;
-	}
-
-	public String getProgressString() {
-		return progress + "% (" + Main.formatFileSize(totalBytesTransfered) + " / " +  Main.formatFileSize(sizeOfNowReceivingFile) + ")";
-	}
-	
-	public String getStaus() {
-		
-		if(status.equals("Downloading...")) {
-			return status + " (" + progress + "%)";
-		}
-		return status;
-	}
-
-	public String getDest() {
-		return destination.getAbsolutePath();
-	}
-
 	public void disconnect() {
 		isAborted = true;
 		future.cancel(true); //cancel the task
@@ -94,12 +81,11 @@ public class FileReceiver implements Runnable{
 		String fileName = null;
 		InetSocketAddress address = new InetSocketAddress(ip, port);
 		boolean gotMetadata = false; // is metadata received?
+		boolean completed = false; // is connection completed without problem?
 		try (AsynchronousSocketChannel ch = AsynchronousSocketChannel.open(Main.channelGroup)) {
 
 			Main.log(taskInfo + "Connecting to Server...");
 			ch.connect(address).get();
-			
-			DownloadingListTableModel.getinstance().addTask(this);
 			
 			while (!isAborted) {
 				
@@ -110,7 +96,10 @@ public class FileReceiver implements Runnable{
 				long[] lenData = new long[2]; // first is length of file name, and second is length of the file(both
 												// counted in byte).
 				
-				Main.readFromChannel(ch, lenBuf, "Server disconnected while reading length of the file!");
+				if(Main.readFromChannel(ch, lenBuf, "Server disconnected while reading length of the file!") == false) {
+					completed = true;
+					break;
+				}
 
 				lenBuf.asLongBuffer().get(lenData);
 
@@ -123,14 +112,20 @@ public class FileReceiver implements Runnable{
 
 				if(Main.confirm(taskInfo + "Download file?", "Download " + fileName + "(" + Main.formatFileSize(lenData[1]) +")")) { // Ask user where to save the received file.
 					
-					if((destination = chooseSaveDest(fileName)) != null) {
+					DonwloadingStatus dstat = new DonwloadingStatus(destination.getAbsolutePath(), lenData[1]);
+					destination = chooseSaveDest(fileName);
+					DownloadingListTableModel.getinstance().addTask(dstat);
+					
+					if(destination != null) {
 						responseBuf.put((byte) 1);
 						while (responseBuf.hasRemaining()) {
 							ch.write(responseBuf).get();
 						}
-						if(!download(ch)) { //download failed!
+						if(!download(ch, lenData[1], dstat)) { //download failed!
+							dstat.setStatus("ERROR!");
 							throw new IOException("Download aborted while downloading " + destination.getAbsolutePath());
 						}
+						dstat.setStatus("Done!");
 					}
 					
 				} else { // user don't want to download this file.
@@ -146,34 +141,32 @@ public class FileReceiver implements Runnable{
 			
 
 		} catch (ClosedByInterruptException inter) {
-			status = "ERROR!";
-			if(isAborted) Main.error(taskInfo + "Failed to receive files!", "Cannot receive file " + fileName + " from :" + address.toString() + ", and download aborted!\n%e%", inter);
-			else Main.error(taskInfo + "Failed to receive files!", "Thread interrupted while connecting with : " + address.toString() + ", and download aborted!\n%e%", inter);
+			if(isAborted) Main.error(taskInfo + "Failed to receive files!", "Cannot receive file " + fileName + " from :" + address.toString() + ", and download aborted!\n%e%", inter, true);
+			else Main.error(taskInfo + "Failed to receive files!", "Thread interrupted while connecting with : " + address.toString() + ", and download aborted!\n%e%", inter, true);
 		} catch (Exception e) {
-			status = "ERROR!";
-			if(!gotMetadata) Main.error(taskInfo + "Failed to receive metadata!", "Cannot receive metadata from :" + address.toString() + "\n%e%", e); 
-			else Main.error(taskInfo + "Failed to receive files!", "Cannot receive file from : " + address.toString() + "\n%e%", e);
-		}
+			if(!gotMetadata) Main.error(taskInfo + "Failed to receive metadata!", "Cannot receive metadata from :" + address.toString() + "\n%e%", e, true); 
+			else Main.error(taskInfo + "Failed to receive files!", "Cannot receive file from : " + address.toString() + "\n%e%", e, true);
+		} finally {
+			
+			Main.information("Connection has closed", "Connection from :" + address.toString() + " has closed with" + (completed ? "out" : " a") + " error(s)!", true);
+			resetCallback.run();
 
-		if (!"ERROR!".equals(status)) {
-			status = "Done!";
 		}
-		isDone = true;
-		resetCallback.run();
 		
 	}
 
 
 	/**
 	 * 
+	 * @param len 
+	 * @param dstat 
 	 * @return <code>true</code> if download finished.
 	 * */
-	private boolean download(AsynchronousSocketChannel ch) {
+	private boolean download(AsynchronousSocketChannel ch, long len, DonwloadingStatus dstat) {
 
 		Main.log("Downloading");
-		status = "Downloading...";
-		progress = 0;
-		long sizeOfNowSendingFile = destination.length();
+		dstat.setStatus("Downloading...");
+		long sizeOfNowSendingFile = len;
 		
 		try (FileChannel srcFile = FileChannel.open(destination.toPath(), StandardOpenOption.WRITE)) {
 
@@ -181,10 +174,15 @@ public class FileReceiver implements Runnable{
 
 			while (totalBytesTransfered < sizeOfNowSendingFile) {
 				
-				long transferFromByteCount = 0L;
 				try {
-					
+
+					dataBuf.clear();
+					if (dataBuf.remaining() < (int) (sizeOfNowSendingFile - totalBytesTransfered)) {
+						dataBuf.limit((int) (sizeOfNowSendingFile - totalBytesTransfered));
+					}
+
 					while (dataBuf.hasRemaining() && (ch.read(dataBuf).get() != -1)) {}
+
 					dataBuf.flip();
 
 					while (dataBuf.hasRemaining()) {
@@ -195,19 +193,17 @@ public class FileReceiver implements Runnable{
 					Main.error(taskInfo + "Failed to receive file!",
 							"Cannot receive file : " + destination.getAbsolutePath() + destination.getName() + " ("
 									+ (int) Math.round(100.0 * totalBytesTransfered / sizeOfNowSendingFile) + "%)\n%e%",
-							e);
+							e, true);
 					return false;
 				}
 
-				totalBytesTransfered += transferFromByteCount;
-				progress = (int) Math.round(100.0 * totalBytesTransfered / sizeOfNowSendingFile);
-				Main.log(taskInfo + "Sent " + transferFromByteCount + "byte (" + progress + "%) from " + destination.getName() + " to " + ip);
-				status = "Downloading...";
-				DownloadingListTableModel.getinstance().updated(this);
+				dstat.setProgress((int) Math.round(100.0 * totalBytesTransfered / sizeOfNowSendingFile));
+				Main.log(taskInfo + "Received " + totalBytesTransfered + "byte (" + dstat.getProgress() + "%) from " + ip + " to " + destination.getName());
+				DownloadingListTableModel.getinstance().updated(dstat);
 			}
 
 		} catch (IOException e) {
-			Main.error(taskInfo + "Failed to handle file!", "Cannot handle file : " + destination.getAbsolutePath() + destination.getName() + "\n%e%", e);
+			Main.error(taskInfo + "Failed to handle file!", "Cannot handle file : " + destination.getAbsolutePath() + destination.getName() + "\n%e%", e, true);
 			return false;
 		}
 		
@@ -259,7 +255,7 @@ public class FileReceiver implements Runnable{
 			
 		} catch (Exception e) {
 			Main.error(taskInfo + "Exception in Creating file!",
-					e.getClass().getName() + "%e%\nThis file will be skipped.", (e instanceof InvocationTargetException) ? (Exception)e.getCause() : e);
+					e.getClass().getName() + "%e%\nThis file will be skipped.", (e instanceof InvocationTargetException) ? (Exception)e.getCause() : e, true);
 		}
 		
 		return null;
@@ -269,10 +265,6 @@ public class FileReceiver implements Runnable{
 
 	public String connectedTo() {
 		return ip + ":" + port;
-	}
-
-	public int getProgress() {
-		return progress;
 	}
 
 

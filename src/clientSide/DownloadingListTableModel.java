@@ -18,7 +18,7 @@ public class DownloadingListTableModel extends AbstractTableModel {
 	private static final long serialVersionUID = -1301962023940227000L;
 	
 	private static DownloadingListTableModel instance = new DownloadingListTableModel();
-	private List<FileReceiver> rows = new ArrayList<>();
+	private List<DonwloadingStatus> rows = new ArrayList<>();
 	
 	private DownloadingListTableModel() {}
 
@@ -40,7 +40,7 @@ public class DownloadingListTableModel extends AbstractTableModel {
 		else if(columnIndex == 1)
 			return "Progress";
 		else {
-			Main.error("Invalid column index!", "Invalid column index in DownloadingListTableModel : " + columnIndex, null);
+			Main.error("Invalid column index!", "Invalid column index in DownloadingListTableModel : " + columnIndex, null, false);
 			return "null"; // this should not happen!
 		}
 		
@@ -57,7 +57,7 @@ public class DownloadingListTableModel extends AbstractTableModel {
 			return rows.get(rowIndex).getProgress();
 		}
 		
-		Main.error("Invalid column index!", "Invalid column index in DownloadingListTableModel : " + columnIndex, null);
+		Main.error("Invalid column index!", "Invalid column index in DownloadingListTableModel : " + columnIndex, null, false);
 		return null; // this should not happen!
 	}
 
@@ -65,7 +65,7 @@ public class DownloadingListTableModel extends AbstractTableModel {
 
 	public void clearDone() {
 
-		rows.removeIf((r) -> r.isFinished());
+		rows.removeIf(DonwloadingStatus::isFinished);
 		fireTableDataChanged();
 
 	}
@@ -82,7 +82,7 @@ public class DownloadingListTableModel extends AbstractTableModel {
 			}
 		}
 		
-		LinkedList<FileReceiver> temp = new LinkedList<>();
+		LinkedList<DonwloadingStatus> temp = new LinkedList<>();
 		for (int r : selected) temp.add(rows.get(r));
 		rows.removeAll(temp);
 		
@@ -98,7 +98,7 @@ public class DownloadingListTableModel extends AbstractTableModel {
 
 		if(rows.isEmpty()) return true;
 		
-		rows.removeIf(FileReceiver::isFinished);
+		rows.removeIf(DonwloadingStatus::isFinished);
 
 		if (!rows.isEmpty()) {
 			if (!Main.confirm("Before clearing!",
@@ -106,7 +106,7 @@ public class DownloadingListTableModel extends AbstractTableModel {
 				return false;
 
 			rows.forEach((r) -> {
-				r.disconnect();
+				FileReceiver.getInstance().disconnect();
 			});
 		}
 		
@@ -116,7 +116,7 @@ public class DownloadingListTableModel extends AbstractTableModel {
 
 	}
 
-	public void addTask(FileReceiver r) {
+	public void addTask(DonwloadingStatus r) {
 
 		SwingUtilities.invokeLater(() -> {
 			rows.add(r);
@@ -126,11 +126,11 @@ public class DownloadingListTableModel extends AbstractTableModel {
 	}
 
 
-	public List<FileReceiver> getData() {
+	public List<DonwloadingStatus> getData() {
 		return rows;
 	}
 
-	public void updated(FileReceiver r) {
+	public void updated(DonwloadingStatus r) {
 
 		SwingUtilities.invokeLater(() -> { fireTableRowsUpdated(rows.indexOf(r), rows.indexOf(r)); });
 

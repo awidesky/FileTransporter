@@ -1,6 +1,7 @@
 package main;
 
 import java.awt.EventQueue;
+import java.awt.Image;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -12,7 +13,6 @@ import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -25,6 +25,7 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+
 
 
 
@@ -43,7 +44,7 @@ public class Main {
 	public static final int lenBufSize = 16;
 	public static final Charset charset = Charset.forName("UTF-8");
 	
-	private static final JDialog confirmDialogParent = new JDialog();
+	private static final Image icon = null;
 	
 	private static JFrame frame;
 	
@@ -62,7 +63,7 @@ public class Main {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException
 				| UnsupportedLookAndFeelException e) {
-			error("Error while setting window look&feel", "%e%", e);
+			error("Error while setting window look&feel", "%e%", e, true);
 		}
 		
 		prepareLogFile();
@@ -95,68 +96,165 @@ public class Main {
 		}
 	}
 	
+
+
 	/**
 	 * show error dialog.
 	 * String <code>"%e%"</code> in <code>content</code> will replaced by error message of given <code>Exception</code> if it's not <code>null</code>
 	 * */
-	public static void error(String title, String content, Exception e) {
+	public static void error(String title, String content, Exception e, boolean waitTillClosed) {
 
 		Main.log("\n");
 		String co = content.replace("%e%", (e == null) ? "null" : e.getMessage());
-		SwingUtilities.invokeLater(() -> {
-			
-			final JDialog dialog = new JDialog();
-			dialog.setAlwaysOnTop(true);  
-			JOptionPane.showMessageDialog(dialog, co.replace("\n", System.lineSeparator()), title.replace("\n", System.lineSeparator()), JOptionPane.ERROR_MESSAGE);
-			
-		});
+		
+		if (waitTillClosed) {
+			showErrorDialog(title, co);
+		} else {
+			SwingUtilities.invokeLater(() -> {
+				showErrorDialog(title, co);
+			});
+		}
 		
 		Main.log("[GUI.error] " + title + "\n\t" + co);
 		if(e != null) Main.log(e);
 		
 	}
 	
+	/**
+	 * Show error dialog.
+	 * this method returns after the dialog closed.
+	 * */
+	private static void showErrorDialog(String title, String content) {
 
+		JDialog dialog = new JDialog();
+		dialog.setAlwaysOnTop(true);
+		dialog.setIconImage(icon);
+		
+		if (EventQueue.isDispatchThread()) {
+
+			JOptionPane.showMessageDialog(dialog, content.replace("\n", System.lineSeparator()), title.replace("\n", System.lineSeparator()), JOptionPane.ERROR_MESSAGE);
+			
+		} else {
+			
+			try {
+				SwingUtilities.invokeAndWait(() -> {
+					JOptionPane.showMessageDialog(dialog, content.replace("\n", System.lineSeparator()), title.replace("\n", System.lineSeparator()), JOptionPane.ERROR_MESSAGE);
+				});
+			} catch (Exception e) {
+				error("Exception in Thread working(SwingWorker)", "%e%", (e instanceof InvocationTargetException) ? (Exception)e.getCause() : e, false);
+			}
+
+		}
+		
+	}
+	
+	
+	
+	
 	/**
 	 * show warning dialog.
 	 * String <code>"%e%"</code> in <code>content</code> will replaced by warning message of given <code>Exception</code> if it's not <code>null</code>
 	 * 
 	 * */
-	public static void warning(String title, String content, Exception e) {
-
+	public static void warning(String title, String content, Exception e, boolean waitTillClosed) {
+		
 		Main.log("\n");
 		String co = content.replace("%e%", (e == null) ? "null" : e.getMessage());
-		SwingUtilities.invokeLater(() -> {
-
-			final JDialog dialog = new JDialog();
-			dialog.setAlwaysOnTop(true);  
-			JOptionPane.showMessageDialog(dialog, co.replace("\n", System.lineSeparator()), title.replace("\n", System.lineSeparator()), JOptionPane.WARNING_MESSAGE);
-			
-		});
 		
-		Main.log("[GUI.warning] " + title + "\n\t" + co);
+		if (waitTillClosed) {
+			showWarningDialog(title, co);
+		} else {
+			SwingUtilities.invokeLater(() -> {
+				showWarningDialog(title, co);
+			});
+		}
+		
+		Main.log("[GUI.error] " + title + "\n\t" + co);
 		if(e != null) Main.log(e);
 		
 	}
 	
 	/**
+	 * Show warning dialog.
+	 * this method returns after the dialog closed.
+	 * */
+	private static void showWarningDialog(String title, String content) {
+		
+		final JDialog dialog = new JDialog();
+		dialog.setAlwaysOnTop(true);
+		dialog.setIconImage(icon);
+		
+		if (EventQueue.isDispatchThread()) {
+
+			JOptionPane.showMessageDialog(dialog, content.replace("\n", System.lineSeparator()), title.replace("\n", System.lineSeparator()), JOptionPane.WARNING_MESSAGE);
+			
+		} else {
+			
+			try {
+				SwingUtilities.invokeAndWait(() -> {
+					JOptionPane.showMessageDialog(dialog, content.replace("\n", System.lineSeparator()), title.replace("\n", System.lineSeparator()), JOptionPane.WARNING_MESSAGE);
+				});
+			} catch (Exception e) {
+				error("Exception in Thread working(SwingWorker)", "%e%", (e instanceof InvocationTargetException) ? (Exception)e.getCause() : e, false);
+			}
+
+		}
+		
+	}
+	
+	
+	
+	
+	/**
 	 * show information dialog.
+	 * @param waitTillClosed 
 	 * 
 	 * */
-	public static void information(String title, String content) {
+	public static void information(String title, String content, boolean waitTillClosed) {
 
 		Main.log("\n");
-		SwingUtilities.invokeLater(() -> {
 
-			final JDialog dialog = new JDialog();
-			dialog.setAlwaysOnTop(true);  
-			JOptionPane.showMessageDialog(dialog, content.replace("\n", System.lineSeparator()), title.replace("\n", System.lineSeparator()), JOptionPane.INFORMATION_MESSAGE);
-			
-		});
+		if (waitTillClosed) {
+			showInfoDialog(title, content);
+		} else {
+			SwingUtilities.invokeLater(() -> {
+				showInfoDialog(title, content);
+			});
+		}
 		
 		Main.log("[GUI.information] " + title + "\n\t" + content);
 		
 	}
+	
+	/**
+	 * Show information dialog.
+	 * this method returns after the dialog closed.
+	 * */
+	private static void showInfoDialog(String title, String content) {
+		
+		final JDialog dialog = new JDialog();
+		dialog.setAlwaysOnTop(true);
+		dialog.setIconImage(icon);
+		
+		if (EventQueue.isDispatchThread()) {
+
+			JOptionPane.showMessageDialog(dialog, content.replace("\n", System.lineSeparator()), title.replace("\n", System.lineSeparator()), JOptionPane.INFORMATION_MESSAGE);
+			
+		} else {
+			
+			try {
+				SwingUtilities.invokeAndWait(() -> {
+					JOptionPane.showMessageDialog(dialog, content.replace("\n", System.lineSeparator()), title.replace("\n", System.lineSeparator()), JOptionPane.INFORMATION_MESSAGE);
+				});
+			} catch (Exception e) {
+				error("Exception in Thread working(SwingWorker)", "%e%", (e instanceof InvocationTargetException) ? (Exception)e.getCause() : e, false);
+			}
+
+		}
+		
+	}
+	
+	
 
 	/**
 	 * Ask user to do confirm something with <code>JOptionPane{@link #showConfirmDialog(String, String, JDialog)}</code>. <br>
@@ -164,11 +262,12 @@ public class Main {
 	 * */
 	public static boolean confirm(String title, String message) {
 
-		confirmDialogParent.setAlwaysOnTop(true);
+		final JDialog dialog = new JDialog();
+		dialog.setAlwaysOnTop(true);
 		
 		if (EventQueue.isDispatchThread()) {
 
-			return showConfirmDialog(title, message, confirmDialogParent);
+			return showConfirmDialog(title, message, dialog);
 			
 		} else {
 			
@@ -177,14 +276,14 @@ public class Main {
 			try {
 
 				SwingUtilities.invokeAndWait(() -> {
-					result.set(showConfirmDialog(title, message, confirmDialogParent));
+					result.set(showConfirmDialog(title, message, dialog));
 				});
 				
 				return result.get();
 
 			} catch (Exception e) {
 				error("Exception in Thread working(SwingWorker)",
-						e.getClass().getName() + "-%e%\nI'll consider you chose \"no\"", (e instanceof InvocationTargetException) ? (Exception)e.getCause() : e);
+						e.getClass().getName() + "-%e%\nI'll consider you chose \"no\"", (e instanceof InvocationTargetException) ? (Exception)e.getCause() : e, false);
 			}
 
 			return false;
@@ -228,7 +327,7 @@ public class Main {
 		} catch (IOException e) {
 
 			logTo = new PrintWriter(System.out, true);
-			Main.error("Error when creating log flie", "%e%", e);
+			Main.error("Error when creating log flie", "%e%", e, true);
 			
 		} finally {
 			logger.start();
@@ -275,7 +374,6 @@ public class Main {
 
 	private static void disposeAll() {
 		if(frame != null) frame.dispose();
-		if(confirmDialogParent != null) confirmDialogParent.dispose();
 	}
 	/**
 	 * Submits a job to main worker thread pool
@@ -315,22 +413,28 @@ public class Main {
 	 * 
 	 * @param sendTo A <code>AsynchronousSocketChannel</code> to read from.
 	 * @param buf <code>ByteBuffer</code> to store read bytes.
-	 * @param whenClosed When peer disconnected, this method throws <code>new IOException(whenClosed)</code>.
+	 * @param errorString When Exception occurred, this method throws <code>new IOException(whenClosed)</code>.
 	 * 
-	 * @throws IOException 
-	 * @throws ExecutionException 
-	 * @throws InterruptedException 
+	 * @return If peer has closed the stream, return <code>false</code>.
+	 * 
+	 * @throws Exception 
 	 * */
-	public static void readFromChannel(AsynchronousSocketChannel sendTo, ByteBuffer buf, String whenClosed) throws IOException, InterruptedException, ExecutionException {
+	
+	public static boolean readFromChannel(AsynchronousSocketChannel sendTo, ByteBuffer buf, String errorString) throws Exception {
 		int total = 0;
 		int size = buf.remaining();
-		while(true) {
-			int l = sendTo.read(buf).get();
-			if(l == -1) {
-				sendTo.close();
-				throw new IOException(whenClosed);
+		try {
+			while (true) {
+				int l = sendTo.read(buf).get();
+				if (l == -1) {
+					sendTo.close();
+					return false;
+				}
+				if ((total += l) == size)
+					return true;
 			}
-			if((total += l) == size) return;
+		} catch (Exception e) {
+			throw new Exception(errorString, e);
 		}
 	}
 
