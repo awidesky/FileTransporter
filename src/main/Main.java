@@ -368,6 +368,11 @@ public class Main {
 		}
 
 		log("killed with exit code : " + i);
+		try {
+			logger.join(3000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 		System.exit(i);
 		
 	}
