@@ -38,7 +38,7 @@ public class ClientListTableModel extends AbstractTableModel {
 		else if (columnIndex == 2) {
 			return "Progress";
 		} else {
-			Main.error("Invalid column index!", "Invalid column index in UploadListTableModel : " + columnIndex, null);
+			Main.error("Invalid column index!", "Invalid column index in UploadListTableModel : " + columnIndex, null, false);
 			return "null"; // this should not happen!
 		}
 		
@@ -57,7 +57,7 @@ public class ClientListTableModel extends AbstractTableModel {
 			return rows.get(rowIndex).getProgress();
 		}
 		
-		Main.error("Invalid column index!", "Invalid column index in DownloadingListTableModel : " + columnIndex, null);
+		Main.error("Invalid column index!", "Invalid column index in DownloadingListTableModel : " + columnIndex, null, false);
 		return null; // this should not happen!
 	}
 

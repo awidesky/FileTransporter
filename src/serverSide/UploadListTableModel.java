@@ -39,7 +39,7 @@ public class UploadListTableModel extends AbstractTableModel {
 		else if(columnIndex == 1)
 			return "Size";
 		else {
-			Main.error("Invalid column index!", "Invalid column index in UploadListTableModel : " + columnIndex, null);
+			Main.error("Invalid column index!", "Invalid column index in UploadListTableModel : " + columnIndex, null, false);
 			return "null"; // this should not happen!
 		}
 		
@@ -57,7 +57,7 @@ public class UploadListTableModel extends AbstractTableModel {
 			return Main.formatFileSize(rows.get(rowIndex).length());
 		}
 		
-		Main.error("Invalid column index!", "Invalid column index : " + columnIndex, null);
+		Main.error("Invalid column index!", "Invalid column index : " + columnIndex, null, false);
 		return null; // this should not happen!
 	}
 

@@ -16,16 +16,18 @@ public class FileSender implements Runnable {
 
 	private int port;
 	private File[] files;
+	private Runnable resetCallback;
 	private Future<?> future;
 	private boolean aborted = false;
 	private static String thisIP = null;
 
 	private AsynchronousServerSocketChannel server = null;
 	
-	public FileSender(int port, File[] files) {
+	public FileSender(int port, File[] files, Runnable resetCallback) {
 
 		this.port = port;
 		this.files = files;
+		this.resetCallback = resetCallback;
 
 	}
 
@@ -40,7 +42,7 @@ public class FileSender implements Runnable {
 
 		} catch (IOException e) {
 
-			Main.error("Can't get ip address of this computer!", "%e%", e);
+			Main.error("Can't get ip address of this computer!", "%e%", e, false);
 			return "";
 
 		}
@@ -54,7 +56,7 @@ public class FileSender implements Runnable {
 			server = AsynchronousServerSocketChannel.open(Main.channelGroup);
 
 			server.bind(new InetSocketAddress(port));
-			Main.information("Server opened!", "Server is wating connection from " + getselfIP() + ":" + port);
+			Main.information("Server opened!", "Server is wating connection from " + getselfIP() + ":" + port, false);
 			
 			while (!Main.isAppStopped() && !future.isCancelled()) {
 
@@ -62,7 +64,7 @@ public class FileSender implements Runnable {
 				Future<AsynchronousSocketChannel> fu = server.accept();
 				SendingConnection sc = new SendingConnection(fu.get(), files);
 				ClientListTableModel.getinstance().addConnection(sc);
-				Main.information("Connected to a client!", "Connected to " + sc.getIP() + ":" + sc.getPort());
+				Main.information("Connected to a client!", "Connected to " + sc.getIP() + ":" + sc.getPort(), true);
 
 				sc.setFuture(Main.queueJob(sc));
 
@@ -71,16 +73,19 @@ public class FileSender implements Runnable {
 			Main.log("Server stopped. closing server...");
 
 		} catch (Exception e) {
-			if(aborted)	Main.information("Server is stopped!", "Server is stopped by user, or server thread was interrupted!\nException message : " + e.getMessage());
-			else Main.error("Failed to connect!", "Failed to connect with an client!\n%e%", e);
+			if(aborted)	Main.information("Server is stopped!", "Server is stopped by user, or server thread was interrupted!\nException message : " + e.getMessage(), true);
+			else Main.error("Failed to connect!", "Failed to connect with an client!\n%e%", e, true);
 		} finally {
 			if(server != null) { 
 				try {
 					server.close();
+					server = null;
 				} catch (IOException e) {
-					Main.error("Failed to close server!", "%e%", e);
+					Main.error("Failed to close server!", "%e%", e, true);
 				}
 			}
+			
+			resetCallback.run();
 		}
 
 	}
@@ -92,7 +97,7 @@ public class FileSender implements Runnable {
 			try {
 				server.close();
 			} catch (IOException e) {
-				Main.error("Failed to close server!", "%e%" , e);
+				Main.error("Failed to close server!", "%e%" , e, true);
 			}
 		}
 	}

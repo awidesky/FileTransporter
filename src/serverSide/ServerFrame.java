@@ -90,6 +90,7 @@ public class ServerFrame extends JFrame {
 			public void windowClosing(WindowEvent e) {
 				
 				if(!ClientListTableModel.getinstance().clearAll()) return;
+				stopServer();
 				e.getWindow().dispose();
 				Main.log("ClientFrame was closed");
 				Main.kill(0);
@@ -257,12 +258,12 @@ public class ServerFrame extends JFrame {
 	public void startServer() {
 		
 		if(ip_t.getText().equals("")) {
-	    	Main.error("invalid ip!", "Invalid ip!", null);
+	    	Main.error("invalid ip!", "Invalid ip!", null, true);
 	    	return;
 		}
 		
 		if(UploadListTableModel.getinstance().getData().isEmpty()) {
-	    	Main.error("No file is chosen!", "There's no file to send!", null);
+	    	Main.error("No file is chosen!", "There's no file to send!", null, true);
 	    	return;
 		}
 		
@@ -271,7 +272,7 @@ public class ServerFrame extends JFrame {
 	        i = Integer.parseInt(port_t.getText());
 	        if(i < 0 || 65535 < i) throw new NumberFormatException("port number must be in between 0 ~ 65535");
 	    } catch (NumberFormatException nfe) {
-	    	Main.error("invalid port number!", "Invalid port number!\n%e%", nfe);
+	    	Main.error("invalid port number!", "Invalid port number!\n%e%", nfe, true);
 	    	return;
 	    }
 		
@@ -291,34 +292,20 @@ public class ServerFrame extends JFrame {
 		disconnectSelected.setEnabled(true);
 		disconnectAll.setEnabled(true);
 
-		server = new FileSender(i, UploadListTableModel.getinstance().getData().toArray(new File[]{}));
+		server = new FileSender(i, UploadListTableModel.getinstance().getData().toArray(new File[]{}), this::guiResetCallback);
 		server.setFuture(Main.queueJob(server));
 		
 	}
 	
 	public void stopServer() {
 
-		if(!Main.confirm("Stop server?", "Really want to stop the server?\nconnections may be lost!")) {
+		if(!ClientListTableModel.getinstance().getData().isEmpty() && !Main.confirm("Stop server?", "Really want to stop the server?\nconnections may be lost!")) {
 			return;
 		}
 		
 		server.disconnect();
 		
-		ip.setEnabled(true);
-		port.setEnabled(true);
-		ip_t.setEnabled(true);
-		port_t.setEnabled(true);
-		
-		start.setText("start server");
-		fileListTable.setEnabled(true);
-		addFile.setEnabled(true);
-		deleteSelectedFile.setEnabled(true);
-		
-		clientListTable.setEnabled(false);
-		
-		cleanCompleted.setEnabled(false);
-		disconnectSelected.setEnabled(false);
-		disconnectAll.setEnabled(false);
+		guiResetCallback();
 
 	}
 	
@@ -329,6 +316,7 @@ public class ServerFrame extends JFrame {
 		ip_t.setEnabled(true);
 		port_t.setEnabled(true);
 		
+		start.setText("start server");
 		fileListTable.setEnabled(true);
 		addFile.setEnabled(true);
 		deleteSelectedFile.setEnabled(true);

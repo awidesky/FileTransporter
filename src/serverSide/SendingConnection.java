@@ -55,7 +55,7 @@ public class SendingConnection implements Runnable{
 				Main.log(e1);
 			}
 			
-			Main.error("Not connected with client!", "It seems like a client tried to connect, but not connected successfully\n%e%", e);
+			Main.error("Not connected with client!", "It seems like a client tried to connect, but not connected successfully\n%e%", e, true);
 			isAborted = true;
 			
 			try {
@@ -75,7 +75,7 @@ public class SendingConnection implements Runnable{
 	public void setFuture(Future<?> f) {
 		this.future = f;
 		if(isAborted) {
-			Main.error("Connection lost!", "Not connected to client!", null);
+			Main.error("Connection lost!", "Not connected to client!", null, true);
 			disconnect();
 		}
 	}
@@ -133,7 +133,7 @@ public class SendingConnection implements Runnable{
 				if(isAborted) {
 					Main.log(taskInfo + str +"Thread interrupted while connecting with : " + remoteAddr.toString() + ", and download aborted!\n");
 				}
-				Main.error(taskInfo + "Failed to send metadata!", str + "%e%", e1);
+				Main.error(taskInfo + "Failed to send metadata!", str + "%e%", e1, false);
 				status = "ERROR!";
 				return;
 			}
@@ -181,7 +181,7 @@ public class SendingConnection implements Runnable{
 				if(isAborted) { 
 					Main.log(taskInfo + "Thread interrupted while connecting with : " + getIP() + ":" + getPort() + ", and download aborted!\n" + errStr);
 				}
-				Main.error(taskInfo + "Failed to send file!", errStr + "%e%", e);
+				Main.error(taskInfo + "Failed to send file!", errStr + "%e%", e, false);
 
 				status = "ERROR!";
 				return;
@@ -195,7 +195,7 @@ public class SendingConnection implements Runnable{
 		try {
 			sendTo.close();
 		} catch (IOException e) {
-			Main.error("Failed to close connection with client!", "%e%", e);
+			Main.error("Failed to close connection with client!", "%e%", e, false);
 		}
 		status = "Completed!";
 
