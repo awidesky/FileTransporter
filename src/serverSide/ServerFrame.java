@@ -92,7 +92,7 @@ public class ServerFrame extends JFrame {
 				if(!ClientListTableModel.getinstance().clearAll()) return;
 				stopServer();
 				e.getWindow().dispose();
-				Main.log("ClientFrame was closed");
+				Main.log("ServerFrame was closed");
 				Main.kill(0);
 
 			}
