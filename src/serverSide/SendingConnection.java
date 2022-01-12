@@ -114,7 +114,7 @@ public class SendingConnection implements Runnable{
 			lenBuf.asLongBuffer().put(nameBufSize);
 			lenBuf.asLongBuffer().put(files[i].length());
 			
-			try {
+			try (AsynchronousSocketChannel sock = sendTo) { //TODO : check if there's any error caused by this try resource
 				
 				while (lenBuf.hasRemaining()) {
 					sendTo.write(lenBuf).get();
