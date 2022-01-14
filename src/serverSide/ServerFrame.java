@@ -303,7 +303,7 @@ public class ServerFrame extends JFrame {
 			return;
 		}
 		
-		server.disconnect();
+		if(server != null) server.disconnect();
 		
 		guiResetCallback();
 
