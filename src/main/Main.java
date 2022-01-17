@@ -26,12 +26,15 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
+import serverSide.ServerFrame;
+
 
 
 
 public class Main {
 
 	private static Thread logger;
+	private static volatile File logFile;
 	private static LinkedBlockingQueue<Runnable> loggerQueue = new LinkedBlockingQueue<>();
 	private static boolean isStop = false;
 	private static PrintWriter logTo;
@@ -318,7 +321,7 @@ public class Main {
 		try {
 			
 			File logFolder = new File(new File(".").getAbsoluteFile().getParent() + File.separator + "logs");
-			File logFile = new File(logFolder.getAbsolutePath() + File.separator + "log-" + new SimpleDateFormat("yyyy-MM-dd-kk-mm-ss").format(new Date()) + ".txt");
+			logFile = new File(logFolder.getAbsolutePath() + File.separator + "log-" + new SimpleDateFormat("yyyy-MM-dd-kk-mm-ss").format(new Date()) + ".txt");
 			logFolder.mkdirs();
 			logFile.createNewFile();
 			
@@ -370,9 +373,23 @@ public class Main {
 		log("killed with exit code : " + i);
 		try {
 			logger.join(3000);
+			logTo.close();
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
+		
+		String logName = logFile.getName();
+		File newLog = new File(logFile.getParentFile().getAbsolutePath() + File.separator + logName.substring(0, logName.lastIndexOf(".")) + "-" + ((frame instanceof ServerFrame) ? "server" : "client") + ".txt");
+		logFile.renameTo(newLog);
+		
+		/*try {
+			Files.move(logFile.toPath(), newLog.toPath());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}*/
+		
+		//System.out.println(newLog.getAbsolutePath() + "   " + logFile.renameTo(newLog));
+		
 		System.exit(i);
 		
 	}
