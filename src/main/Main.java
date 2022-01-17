@@ -52,8 +52,8 @@ public class Main {
 		 try {
 			channelGroup = AsynchronousChannelGroup.withThreadPool(Main.getThreadPool());
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
+			System.exit(1);
 		}
 	}
 	
