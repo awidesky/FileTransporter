@@ -1,4 +1,4 @@
-package serverSide;
+package com.awidesky.serverSide;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -8,7 +8,8 @@ import java.util.List;
 import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
 
-import main.Main;
+import com.awidesky.main.Main;
+import com.awidesky.util.SwingDialogs;
 
 public class UploadListTableModel extends AbstractTableModel {
 
@@ -39,7 +40,7 @@ public class UploadListTableModel extends AbstractTableModel {
 		else if(columnIndex == 1)
 			return "Size";
 		else {
-			Main.error("Invalid column index!", "Invalid column index in UploadListTableModel : " + columnIndex, null, false);
+			SwingDialogs.error("Invalid column index!", "Invalid column index in UploadListTableModel : " + columnIndex, null, false);
 			return "null"; // this should not happen!
 		}
 		
@@ -57,7 +58,7 @@ public class UploadListTableModel extends AbstractTableModel {
 			return Main.formatFileSize(rows.get(rowIndex).length());
 		}
 		
-		Main.error("Invalid column index!", "Invalid column index : " + columnIndex, null, false);
+		SwingDialogs.error("Invalid column index!", "Invalid column index : " + columnIndex, null, false);
 		return null; // this should not happen!
 	}
 

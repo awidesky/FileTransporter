@@ -1,4 +1,4 @@
-package clientSide;
+package com.awidesky.clientSide;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,11 +16,15 @@ import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.SwingUtilities;
 
-import main.Main;
+import com.awidesky.main.Main;
+import com.awidesky.util.SwingDialogs;
+import com.awidesky.util.TaskLogger;
 
 public class FileReceiver implements Runnable{
 
 	private static final FileReceiver instance = new FileReceiver();
+
+	private TaskLogger logger;
 	
 	private long totalBytesTransfered;
 	private boolean isAborted = false;
@@ -49,12 +53,13 @@ public class FileReceiver implements Runnable{
 	
 	public FileReceiver() {}	
 	
-	public static FileReceiver getInstance(String ip, int port, Runnable resetCallback) {
+	public static FileReceiver getInstance(String ip, int port, Runnable resetCallback, TaskLogger logger) { //TODO : just get a new logger from main..?
 		
 		instance.ip = ip;
 		instance.port = port;
 		instance.resetCallback = resetCallback;
 		instance.taskInfo = "Client|Connection[" + ip + ":" + port + "] ";
+		instance.logger = logger;
 		
 		return instance;
 		
@@ -84,7 +89,7 @@ public class FileReceiver implements Runnable{
 		boolean completed = false; // is connection completed without problem?
 		try (AsynchronousSocketChannel ch = AsynchronousSocketChannel.open(Main.channelGroup)) {
 
-			Main.log(taskInfo + "Connecting to Server...");
+			logger.log(taskInfo + "Connecting to Server...");
 			ch.connect(address).get();
 			
 			while (!isAborted) {
@@ -110,7 +115,7 @@ public class FileReceiver implements Runnable{
 
 				gotMetadata = true;
 
-				if(Main.confirm(taskInfo + "Download file?", "Download " + fileName + "(" + Main.formatFileSize(lenData[1]) +")")) { // Ask user where to save the received file.
+				if(SwingDialogs.confirm(taskInfo + "Download file?", "Download " + fileName + "(" + Main.formatFileSize(lenData[1]) +")")) { // Ask user where to save the received file.
 					
 					DonwloadingStatus dstat = new DonwloadingStatus(destination.getAbsolutePath(), lenData[1]);
 					destination = chooseSaveDest(fileName);
@@ -141,16 +146,14 @@ public class FileReceiver implements Runnable{
 			
 
 		} catch (ClosedByInterruptException inter) {
-			if(isAborted) Main.error(taskInfo + "Failed to receive files!", "Cannot receive file " + fileName + " from :" + address.toString() + ", and download aborted!\n%e%", inter, true);
-			else Main.error(taskInfo + "Failed to receive files!", "Thread interrupted while connecting with : " + address.toString() + ", and download aborted!\n%e%", inter, true);
+			if(isAborted) SwingDialogs.error(taskInfo + "Failed to receive files!", "Cannot receive file " + fileName + " from :" + address.toString() + ", and download aborted!\n%e%", inter, true);
+			else SwingDialogs.error(taskInfo + "Failed to receive files!", "Thread interrupted while connecting with : " + address.toString() + ", and download aborted!\n%e%", inter, true);
 		} catch (Exception e) {
-			if(!gotMetadata) Main.error(taskInfo + "Failed to receive metadata!", "Cannot receive metadata from :" + address.toString() + "\n%e%", e, true); 
-			else Main.error(taskInfo + "Failed to receive files!", "Cannot receive file from : " + address.toString() + "\n%e%", e, true);
+			if(!gotMetadata) SwingDialogs.error(taskInfo + "Failed to receive metadata!", "Cannot receive metadata from :" + address.toString() + "\n%e%", e, true); 
+			else SwingDialogs.error(taskInfo + "Failed to receive files!", "Cannot receive file from : " + address.toString() + "\n%e%", e, true);
 		} finally {
-			
-			Main.information("Connection has closed", "Connection from :" + address.toString() + " has closed with" + (completed ? "out" : " a") + " error(s)!", true);
+			SwingDialogs.information("Connection has closed", "Connection from :" + address.toString() + " has closed with" + (completed ? "out" : " a") + " error(s)!", true);
 			resetCallback.run();
-
 		}
 		
 	}
@@ -164,7 +167,7 @@ public class FileReceiver implements Runnable{
 	 * */
 	private boolean download(AsynchronousSocketChannel ch, long len, DonwloadingStatus dstat) {
 
-		Main.log("Downloading");
+		logger.log("Downloading");
 		dstat.setStatus("Downloading...");
 		long sizeOfNowSendingFile = len;
 		
@@ -190,7 +193,7 @@ public class FileReceiver implements Runnable{
 					}
 
 				} catch (Exception e) {
-					Main.error(taskInfo + "Failed to receive file!",
+					SwingDialogs.error(taskInfo + "Failed to receive file!",
 							"Cannot receive file : " + destination.getAbsolutePath() + destination.getName() + " ("
 									+ (int) Math.round(100.0 * totalBytesTransfered / sizeOfNowSendingFile) + "%)\n%e%",
 							e, true);
@@ -198,12 +201,12 @@ public class FileReceiver implements Runnable{
 				}
 
 				dstat.setProgress((int) Math.round(100.0 * totalBytesTransfered / sizeOfNowSendingFile));
-				Main.log(taskInfo + "Received " + totalBytesTransfered + "byte (" + dstat.getProgress() + "%) from " + ip + " to " + destination.getName());
+				logger.log(taskInfo + "Received " + totalBytesTransfered + "byte (" + dstat.getProgress() + "%) from " + ip + " to " + destination.getName());
 				DownloadingListTableModel.getinstance().updated(dstat);
 			}
 
 		} catch (IOException e) {
-			Main.error(taskInfo + "Failed to handle file!", "Cannot handle file : " + destination.getAbsolutePath() + destination.getName() + "\n%e%", e, true);
+			SwingDialogs.error(taskInfo + "Failed to handle file!", "Cannot handle file : " + destination.getAbsolutePath() + destination.getName() + "\n%e%", e, true);
 			return false;
 		}
 		
@@ -241,7 +244,7 @@ public class FileReceiver implements Runnable{
 				File dest = new File(result.get().getAbsolutePath() + File.separator + fileName);
 				
 				if (dest.exists()) {
-					if (Main.confirm(taskInfo + "File already exists!",
+					if (SwingDialogs.confirm(taskInfo + "File already exists!",
 							dest.getAbsolutePath() + " already exists! Want to overite?")) {
 						dest.delete();
 						dest.createNewFile();
@@ -254,7 +257,7 @@ public class FileReceiver implements Runnable{
 			}
 			
 		} catch (Exception e) {
-			Main.error(taskInfo + "Exception in Creating file!",
+			SwingDialogs.error(taskInfo + "Exception in Creating file!",
 					e.getClass().getName() + "%e%\nThis file will be skipped.", (e instanceof InvocationTargetException) ? (Exception)e.getCause() : e, true);
 		}
 		

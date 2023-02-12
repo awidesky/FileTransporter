@@ -1,6 +1,6 @@
-package clientSide;
+package com.awidesky.clientSide;
 
-import main.Main;
+import com.awidesky.main.Main;
 
 public class DonwloadingStatus {
 

@@ -1,4 +1,4 @@
-package serverSide;
+package com.awidesky.serverSide;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -7,7 +7,7 @@ import java.util.List;
 import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
 
-import main.Main;
+import com.awidesky.util.SwingDialogs;
 
 public class ClientListTableModel extends AbstractTableModel {
 
@@ -38,7 +38,7 @@ public class ClientListTableModel extends AbstractTableModel {
 		else if (columnIndex == 2) {
 			return "Progress";
 		} else {
-			Main.error("Invalid column index!", "Invalid column index in UploadListTableModel : " + columnIndex, null, false);
+			SwingDialogs.error("Invalid column index!", "Invalid column index in UploadListTableModel : " + columnIndex, null, false);
 			return "null"; // this should not happen!
 		}
 		
@@ -57,7 +57,7 @@ public class ClientListTableModel extends AbstractTableModel {
 			return rows.get(rowIndex).getProgress();
 		}
 		
-		Main.error("Invalid column index!", "Invalid column index in DownloadingListTableModel : " + columnIndex, null, false);
+		SwingDialogs.error("Invalid column index!", "Invalid column index in DownloadingListTableModel : " + columnIndex, null, false);
 		return null; // this should not happen!
 	}
 
@@ -76,7 +76,7 @@ public class ClientListTableModel extends AbstractTableModel {
 			if (rows.get(r).isFinished()) { 
 				continue;
 			} else {
-				if (Main.confirm("Before clearing!", "Some task(s) are not done!\nDisconnect connection(s)?")) {
+				if (SwingDialogs.confirm("Before clearing!", "Some task(s) are not done!\nDisconnect connection(s)?")) {
 					break;
 				} else { return; }
 			}
@@ -101,7 +101,7 @@ public class ClientListTableModel extends AbstractTableModel {
 		rows.removeIf(SendingConnection::isFinished);
 		
 		if (!rows.isEmpty()) {
-			if (!Main.confirm("Before clearing!",
+			if (!SwingDialogs.confirm("Before clearing!",
 					"Some task(s) are not done!\nDisconnect all connection(s) and clear list?"))
 				return false;
 

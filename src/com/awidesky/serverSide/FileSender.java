@@ -1,4 +1,4 @@
-package serverSide;
+package com.awidesky.serverSide;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -10,7 +10,9 @@ import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.util.concurrent.Future;
 
-import main.Main;
+import com.awidesky.main.Main;
+import com.awidesky.util.SwingDialogs;
+import com.awidesky.util.TaskLogger;
 
 public class FileSender implements Runnable {
 
@@ -23,11 +25,14 @@ public class FileSender implements Runnable {
 
 	private AsynchronousServerSocketChannel server = null;
 	
-	public FileSender(int port, File[] files, Runnable resetCallback) {
+	private TaskLogger logger;
+	
+	public FileSender(int port, File[] files, Runnable resetCallback, TaskLogger logger) {
 
 		this.port = port;
 		this.files = files;
 		this.resetCallback = resetCallback;
+		this.logger = logger;
 
 	}
 
@@ -42,7 +47,7 @@ public class FileSender implements Runnable {
 
 		} catch (IOException e) {
 
-			Main.error("Can't get ip address of this computer!", "%e%", e, false);
+			SwingDialogs.error("Can't get ip address of this computer!", "%e%", e, false);
 			return "";
 
 		}
@@ -56,32 +61,32 @@ public class FileSender implements Runnable {
 			server = AsynchronousServerSocketChannel.open(Main.channelGroup);
 
 			server.bind(new InetSocketAddress(port));
-			Main.information("Server opened!", "Server is wating connection from " + getselfIP() + ":" + port, false);
+			SwingDialogs.information("Server opened!", "Server is wating connection from " + getselfIP() + ":" + port, false);
 			
 			while (!Main.isAppStopped() && !future.isCancelled()) {
 
-				Main.log("Server|Ready for connection...");
+				logger.log("Server|Ready for connection...");
 				Future<AsynchronousSocketChannel> fu = server.accept();
 				SendingConnection sc = new SendingConnection(fu.get(), files);
 				ClientListTableModel.getinstance().addConnection(sc);
-				Main.information("Connected to a client!", "Connected to " + sc.getIP() + ":" + sc.getPort(), true);
+				SwingDialogs.information("Connected to a client!", "Connected to " + sc.getIP() + ":" + sc.getPort(), true);
 
 				sc.setFuture(Main.queueJob(sc));
 
 			}
 
-			Main.log("Server stopped. closing server...");
+			logger.log("Server stopped. closing server...");
 
 		} catch (Exception e) {
-			if(aborted)	Main.information("Server is stopped!", "Server is stopped by user, or server thread was interrupted!\nException message : " + e.getMessage(), true);
-			else Main.error("Failed to connect!", "Failed to connect with an client!\n%e%", e, true);
+			if(aborted)	SwingDialogs.information("Server is stopped!", "Server is stopped by user, or server thread was interrupted!\nException message : " + e.getMessage(), true);
+			else SwingDialogs.error("Failed to connect!", "Failed to connect with an client!\n%e%", e, true);
 		} finally {
 			if(server != null) { 
 				try {
 					server.close();
 					server = null;
 				} catch (IOException e) {
-					Main.error("Failed to close server!", "%e%", e, true);
+					SwingDialogs.error("Failed to close server!", "%e%", e, true);
 				}
 			}
 			
@@ -97,7 +102,7 @@ public class FileSender implements Runnable {
 			try {
 				server.close();
 			} catch (IOException e) {
-				Main.error("Failed to close server!", "%e%" , e, true);
+				SwingDialogs.error("Failed to close server!", "%e%" , e, true);
 			}
 		}
 	}

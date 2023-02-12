@@ -1,4 +1,4 @@
-package serverSide;
+package com.awidesky.serverSide;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,7 +11,9 @@ import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.Future;
 
-import main.Main;
+import com.awidesky.main.Main;
+import com.awidesky.util.SwingDialogs;
+import com.awidesky.util.TaskLogger;
 
 
 /**
@@ -39,6 +41,8 @@ public class SendingConnection implements Runnable{
 	private ByteBuffer lenBuf = ByteBuffer.allocate(Main.lenBufSize);
 	private ByteBuffer dataBuf = ByteBuffer.allocateDirect(Main.transferChunk);
 	
+	private TaskLogger logger = Main.getLogger();
+	
 	public SendingConnection(AsynchronousSocketChannel serverSocket, File[] f) {
 		
 		sendTo = serverSocket;
@@ -52,30 +56,30 @@ public class SendingConnection implements Runnable{
 			try {
 				if(sendTo != null)sendTo.close();
 			} catch (IOException e1) {
-				Main.log(e1);
+				logger.log(e1);
 			}
 			
-			Main.error("Not connected with client!", "It seems like a client tried to connect, but not connected successfully\n%e%", e, true);
+			SwingDialogs.error("Not connected with client!", "It seems like a client tried to connect, but not connected successfully\n%e%", e, true);
 			isAborted = true;
 			
 			try {
 				remoteAddr = new InetSocketAddress(InetAddress.getLocalHost(), -1);
 			} catch (UnknownHostException e1) {
-				Main.log(e1);
+				logger.log(e1);
 			}
 			
 			return;
 		}
 			
 		taskInfo = "Server|Connection[" + getIP() + ":" + getPort() + "] ";
-		Main.log(taskInfo + "	Connected to " + getIP());
+		logger.log(taskInfo + "	Connected to " + getIP());
 		
 	}
 	
 	public void setFuture(Future<?> f) {
 		this.future = f;
 		if(isAborted) {
-			Main.error("Connection lost!", "Not connected to client!", null, true);
+			SwingDialogs.error("Connection lost!", "Not connected to client!", null, true);
 			disconnect();
 		}
 	}
@@ -106,7 +110,7 @@ public class SendingConnection implements Runnable{
 		
 		for(; i < files.length ; i++) {
 			
-			Main.log(taskInfo + "Sending metadata of " +files[i].getName());
+			logger.log(taskInfo + "Sending metadata of " +files[i].getName());
 			/* Send metadata */
 			ByteBuffer nameBuf = Main.charset.encode(files[i].getName());
 			
@@ -131,19 +135,19 @@ public class SendingConnection implements Runnable{
 			} catch (Exception e1) {
 				String str = "Cannot send metadata : " + files[i].getAbsolutePath() + files[i].getName() + "\n";
 				if(isAborted) {
-					Main.log(taskInfo + str +"Thread interrupted while connecting with : " + remoteAddr.toString() + ", and download aborted!\n");
+					logger.log(taskInfo + str +"Thread interrupted while connecting with : " + remoteAddr.toString() + ", and download aborted!\n");
 				}
-				Main.error(taskInfo + "Failed to send metadata!", str + "%e%", e1, false);
+				SwingDialogs.error(taskInfo + "Failed to send metadata!", str + "%e%", e1, false);
 				status = "ERROR!";
 				return;
 			}
 			
 			if(clientResponse.get() == 0) { /* User don't want to download this file, skip it. */
-				Main.log(taskInfo + "Skip " +files[i].getName() + " because client wanted to.");
+				logger.log(taskInfo + "Skip " +files[i].getName() + " because client wanted to.");
 				continue;
 			}
 
-			Main.log(taskInfo + "Sending " +files[i].getName());
+			logger.log(taskInfo + "Sending " +files[i].getName());
 			status = "Sending...";
 			progress = 0;
 			sizeOfNowSendingFile = files[i].length();
@@ -169,7 +173,7 @@ public class SendingConnection implements Runnable{
 					}
 					
 					progress = (int) Math.round(100.0 * totalBytesTransfered / sizeOfNowSendingFile);
-					Main.log(taskInfo + "Sent " + totalBytesTransfered + "byte (" + progress + "%) from " + files[i].getName() + " to " + getIP());
+					logger.log(taskInfo + "Sent " + totalBytesTransfered + "byte (" + progress + "%) from " + files[i].getName() + " to " + getIP());
 					status = "Uploading... (" + (i + 1) + "/" + files.length + ")";
 					ClientListTableModel.getinstance().updated(this);
 				}
@@ -179,23 +183,23 @@ public class SendingConnection implements Runnable{
 				String errStr =  "Cannot send file : " + files[i].getAbsolutePath() + files[i].getName() + " ("
 						+ (int) Math.round(100.0 * totalBytesTransfered / sizeOfNowSendingFile) + "%)\n";
 				if(isAborted) { 
-					Main.log(taskInfo + "Thread interrupted while connecting with : " + getIP() + ":" + getPort() + ", and download aborted!\n" + errStr);
+					logger.log(taskInfo + "Thread interrupted while connecting with : " + getIP() + ":" + getPort() + ", and download aborted!\n" + errStr);
 				}
-				Main.error(taskInfo + "Failed to send file!", errStr + "%e%", e, false);
+				SwingDialogs.error(taskInfo + "Failed to send file!", errStr + "%e%", e, false);
 
 				status = "ERROR!";
 				return;
 				
 			}
 			
-			Main.log(taskInfo + "Sent " +files[i].getName() + " successfully!");
+			logger.log(taskInfo + "Sent " +files[i].getName() + " successfully!");
 			
 		} //for end
 		
 		try {
 			sendTo.close();
 		} catch (IOException e) {
-			Main.error("Failed to close connection with client!", "%e%", e, false);
+			SwingDialogs.error("Failed to close connection with client!", "%e%", e, false);
 		}
 		status = "Completed!";
 

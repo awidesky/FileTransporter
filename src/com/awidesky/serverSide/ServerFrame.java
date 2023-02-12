@@ -1,4 +1,4 @@
-package serverSide;
+package com.awidesky.serverSide;
 
 import java.awt.Dimension;
 import java.awt.Insets;
@@ -22,15 +22,19 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.filechooser.FileFilter;
 
-import main.ImageViewer;
-import main.Main;
-import main.ProgressRenderer;
+import com.awidesky.main.ImageViewer;
+import com.awidesky.main.Main;
+import com.awidesky.main.ProgressRenderer;
+import com.awidesky.util.SwingDialogs;
+import com.awidesky.util.TaskLogger;
 
 public class ServerFrame extends JFrame {
 
 	private static final long serialVersionUID = 8677739105321293193L;
 	
 	private FileSender server = null;
+	
+	private TaskLogger logger = Main.getLogger();;
 	
 	private JFileChooser chooser = new JFileChooser();;
 	private JDialog dialog = new JDialog();;
@@ -92,7 +96,7 @@ public class ServerFrame extends JFrame {
 				if(!ClientListTableModel.getinstance().clearAll()) return;
 				stopServer();
 				e.getWindow().dispose();
-				Main.log("ServerFrame was closed");
+				logger.log("ServerFrame was closed");
 				Main.kill(0);
 
 			}
@@ -252,18 +256,20 @@ public class ServerFrame extends JFrame {
 		add(scrollPane);
 		add(scrollPane1);
 		
+		logger.setPrefix("[Server]");
+		
 		setVisible(true);
 	}
 	
 	public void startServer() {
 		
 		if(ip_t.getText().equals("")) {
-	    	Main.error("invalid ip!", "Invalid ip!", null, true);
+			SwingDialogs.error("invalid ip!", "Invalid ip!", null, true);
 	    	return;
 		}
 		
 		if(UploadListTableModel.getinstance().getData().isEmpty()) {
-	    	Main.error("No file is chosen!", "There's no file to send!", null, true);
+			SwingDialogs.error("No file is chosen!", "There's no file to send!", null, true);
 	    	return;
 		}
 		
@@ -272,7 +278,7 @@ public class ServerFrame extends JFrame {
 	        i = Integer.parseInt(port_t.getText());
 	        if(i < 0 || 65535 < i) throw new NumberFormatException("port number must be in between 0 ~ 65535");
 	    } catch (NumberFormatException nfe) {
-	    	Main.error("invalid port number!", "Invalid port number!\n%e%", nfe, true);
+	    	SwingDialogs.error("invalid port number!", "Invalid port number!\n%e%", nfe, true);
 	    	return;
 	    }
 		
@@ -292,14 +298,14 @@ public class ServerFrame extends JFrame {
 		disconnectSelected.setEnabled(true);
 		disconnectAll.setEnabled(true);
 
-		server = new FileSender(i, UploadListTableModel.getinstance().getData().toArray(new File[]{}), this::guiResetCallback);
+		server = new FileSender(i, UploadListTableModel.getinstance().getData().toArray(new File[]{}), this::guiResetCallback, logger);
 		server.setFuture(Main.queueJob(server));
 		
 	}
 	
 	public void stopServer() {
 
-		if(!ClientListTableModel.getinstance().getData().isEmpty() && !Main.confirm("Stop server?", "Really want to stop the server?\nconnections may be lost!")) {
+		if(!ClientListTableModel.getinstance().getData().isEmpty() && !SwingDialogs.confirm("Stop server?", "Really want to stop the server?\nconnections may be lost!")) {
 			return;
 		}
 		

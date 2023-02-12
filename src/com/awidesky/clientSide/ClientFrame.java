@@ -1,4 +1,4 @@
-package clientSide;
+package com.awidesky.clientSide;
 
 import java.awt.Dimension;
 import java.awt.Insets;
@@ -15,15 +15,13 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
-import main.Main;
-import main.ProgressRenderer;
+import com.awidesky.main.Main;
+import com.awidesky.main.ProgressRenderer;
+import com.awidesky.util.SwingDialogs;
+import com.awidesky.util.TaskLogger;
 
 public class ClientFrame extends JFrame {
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = -7368753427595623846L;
 	
 	private JLabel ip = new JLabel("IP :");
 	private JLabel port = new JLabel("Port :");
@@ -56,6 +54,8 @@ public class ClientFrame extends JFrame {
 		
 	};
 	
+	private final TaskLogger logger = Main.getLogger();
+	
 	public ClientFrame() {
 		
 		setTitle("FileTransporter(client) " + Main.version);
@@ -68,7 +68,7 @@ public class ClientFrame extends JFrame {
 				
 				if(!DownloadingListTableModel.getinstance().clearAll()) return;
 				e.getWindow().dispose();
-				Main.log("ClientFrame was closed");
+				logger.log("ClientFrame was closed");
 				Main.kill(0);
 
 			}
@@ -100,7 +100,7 @@ public class ClientFrame extends JFrame {
 		connect.addActionListener((e) -> {
 
 			if(ip_t.getText().equals("")) {
-		    	Main.error("invalid ip!", "Invalid ip!", null, true);
+		    	SwingDialogs.error("invalid ip!", "Invalid ip!", null, true);
 		    	return;
 			}
 			
@@ -108,7 +108,7 @@ public class ClientFrame extends JFrame {
 			try {
 		        i = Integer.parseInt(port_t.getText());
 		    } catch (NumberFormatException nfe) {
-		    	Main.error("invalid port number!", "Invalid port number!\n%e%", nfe, true);
+		    	SwingDialogs.error("invalid port number!", "Invalid port number!\n%e%", nfe, true);
 		    	return;
 		    }
 			
@@ -119,7 +119,7 @@ public class ClientFrame extends JFrame {
 			
 			connect.setEnabled(false);
 			
-			FileReceiver fr = FileReceiver.getInstance(ip_t.getText(), i, this::guiResetCallback);
+			FileReceiver fr = FileReceiver.getInstance(ip_t.getText(), i, this::guiResetCallback, logger);
 			fr.setFuture(Main.queueJob(fr));
 			
 		});
@@ -151,6 +151,8 @@ public class ClientFrame extends JFrame {
 		add(disconnectSelected);
 		add(clearAll);
 		add(scrollPane);
+		
+		logger.setPrefix("[Client]");
 		
 		setVisible(true);
 	}

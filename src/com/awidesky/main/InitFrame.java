@@ -1,4 +1,4 @@
-package main;
+package com.awidesky.main;
 
 import java.awt.Dimension;
 import java.awt.Insets;
@@ -6,20 +6,20 @@ import java.awt.Toolkit;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
 
-import clientSide.ClientFrame;
-import serverSide.ServerFrame;
+import com.awidesky.clientSide.ClientFrame;
+import com.awidesky.serverSide.ServerFrame;
+import com.awidesky.util.TaskLogger;
 
 public class InitFrame extends JFrame {
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 7671613620610932124L;
+	private final TaskLogger logger = Main.getLogger();
+	
 	private JButton server = new JButton("Start a Server");
 	private JButton client = new JButton("Start a Client");
 
@@ -30,7 +30,7 @@ public class InitFrame extends JFrame {
 
 		int he = 200, wi = 300;
 		setTitle("FileTransporter " + Main.version);
-		// setIconImage(new ImageIcon().getImage());
+		setIconImage(Main.icon);
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		addWindowListener(new WindowAdapter() {
 
@@ -38,7 +38,7 @@ public class InitFrame extends JFrame {
 			public void windowClosing(WindowEvent e) {
 
 				e.getWindow().dispose();
-				Main.log("InitFrame was closed");
+				logger.log("InitFrame was closed");
 				Main.kill(1);
 
 			}
@@ -77,7 +77,10 @@ public class InitFrame extends JFrame {
 		add(tpChunk);
 		add(tpChunk_t);
 
+		logger.setPrefix("[InitFrame]");
+		
 		setVisible(true);
+		
 	}
 
 	/**
@@ -85,6 +88,7 @@ public class InitFrame extends JFrame {
 	 * */
 	private void checkArguments() {
 		
+		//TODO : add checkbox & errorcheck
 		Main.setTransferChunk(tpChunk_t.getText());
 
 	}
