@@ -33,8 +33,9 @@ public class ServerFrame extends JFrame {
 	private static final long serialVersionUID = 8677739105321293193L;
 	
 	private FileSender server = null;
+	private boolean isStarted = false;
 	
-	private TaskLogger logger = Main.getLogger();;
+	private TaskLogger logger = Main.getLogger("[Server]");
 	
 	private JFileChooser chooser = new JFileChooser();;
 	private JDialog dialog = new JDialog();;
@@ -86,7 +87,7 @@ public class ServerFrame extends JFrame {
 	public ServerFrame() {
 
 		setTitle("FileTransporter(server) " + Main.version);
-		//setIconImage(new ImageIcon().getImage());
+		setIconImage(Main.icon);
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		addWindowListener(new WindowAdapter() {
 
@@ -185,11 +186,12 @@ public class ServerFrame extends JFrame {
 		
 		start.addActionListener((e) -> {
 			
-			if("start server".equals(start.getText())) {
-				startServer();
-			} else {
+			if(isStarted) {
 				stopServer();
+			} else {
+				startServer();
 			}
+			isStarted = !isStarted;
 			
 		});
 		cleanCompleted.addActionListener((e) -> {
@@ -255,8 +257,6 @@ public class ServerFrame extends JFrame {
 		add(disconnectSelected);
 		add(scrollPane);
 		add(scrollPane1);
-		
-		logger.setPrefix("[Server]");
 		
 		setVisible(true);
 	}

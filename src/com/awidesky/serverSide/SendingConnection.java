@@ -22,7 +22,7 @@ import com.awidesky.util.TaskLogger;
  *  
  *  
  * */
-public class SendingConnection implements Runnable{
+public class SendingConnection implements Runnable {
 
 	private File[] files;
 	private AsynchronousSocketChannel sendTo;
@@ -41,7 +41,7 @@ public class SendingConnection implements Runnable{
 	private ByteBuffer lenBuf = ByteBuffer.allocate(Main.lenBufSize);
 	private ByteBuffer dataBuf = ByteBuffer.allocateDirect(Main.transferChunk);
 	
-	private TaskLogger logger = Main.getLogger();
+	private TaskLogger logger = Main.getLogger(null);
 	
 	public SendingConnection(AsynchronousSocketChannel serverSocket, File[] f) {
 		

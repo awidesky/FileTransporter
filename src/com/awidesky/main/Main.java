@@ -113,8 +113,8 @@ public class Main {
 		}
 	}
 
-	public static TaskLogger getLogger() {
-		return logThread.getLogger();
+	public static TaskLogger getLogger(String prefix) {
+		return logThread.getLogger(prefix);
 	}
 	
 	public static void kill(int i) {

@@ -54,7 +54,7 @@ public class ClientFrame extends JFrame {
 		
 	};
 	
-	private final TaskLogger logger = Main.getLogger();
+	private final TaskLogger logger = Main.getLogger("[Client]");
 	
 	public ClientFrame() {
 		
@@ -151,8 +151,6 @@ public class ClientFrame extends JFrame {
 		add(disconnectSelected);
 		add(clearAll);
 		add(scrollPane);
-		
-		logger.setPrefix("[Client]");
 		
 		setVisible(true);
 	}
