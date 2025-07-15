@@ -32,8 +32,9 @@ public class FileReceiver implements Runnable{
 	private static JFileChooser chooser = new JFileChooser((String)null);
 	private static final JDialog dialog = new JDialog();
 	
-	private String ip;
+	private String ip;//TODO : needed?
 	private int port;
+	private InetSocketAddress remotAddress;
 	
 	private ByteBuffer lenBuf = ByteBuffer.allocate(Main.lenBufSize);
 	private ByteBuffer responseBuf = ByteBuffer.allocate(1);
@@ -44,6 +45,7 @@ public class FileReceiver implements Runnable{
 	private ByteBuffer dataBuf = ByteBuffer.allocateDirect(Main.transferChunk);
 
 	private File destination;
+
 	
 	static {
 		dialog.setAlwaysOnTop(true);
@@ -58,7 +60,7 @@ public class FileReceiver implements Runnable{
 		instance.ip = ip;
 		instance.port = port;
 		instance.resetCallback = resetCallback;
-		instance.taskInfo = "Client|Connection[" + ip + ":" + port + "] ";
+		instance.taskInfo = "Client connected to [" + ip + ":" + port + "] ";
 		instance.logger = logger;
 		
 		return instance;
@@ -91,6 +93,9 @@ public class FileReceiver implements Runnable{
 
 			logger.log(taskInfo + "Connecting to Server...");
 			ch.connect(address).get();
+			remotAddress = (InetSocketAddress) ch.getRemoteAddress();
+			logger.log("Connected to : " + remotAddress);
+			SwingDialogs.information("Connected to the Server!", "Connected to " + remotAddress.getHostString() + ":" + remotAddress.getPort(), true);
 			
 			while (!isAborted) {
 				
@@ -102,11 +107,13 @@ public class FileReceiver implements Runnable{
 												// counted in byte).
 				
 				if(Main.readFromChannel(ch, lenBuf, "Server disconnected while reading length of the file!") == false) {
+					System.out.println("read length return false");
 					completed = true;
 					break;
 				}
 
-				lenBuf.asLongBuffer().get(lenData);
+				lenBuf.flip().asLongBuffer().get(lenData);
+				logger.log("File name lenght : " + lenData[0] + ", length of file : " + Main.formatFileSize(lenData[1]));
 
 				ByteBuffer nameBuf = ByteBuffer.allocate((int) lenData[0]);
 				Main.readFromChannel(ch, nameBuf, "Server disconnected while reading name of the file!");
@@ -117,15 +124,16 @@ public class FileReceiver implements Runnable{
 
 				if(SwingDialogs.confirm(taskInfo + "Download file?", "Download " + fileName + "(" + Main.formatFileSize(lenData[1]) +")")) { // Ask user where to save the received file.
 					
-					DonwloadingStatus dstat = new DonwloadingStatus(destination.getAbsolutePath(), lenData[1]);
 					destination = chooseSaveDest(fileName);
+					DonwloadingStatus dstat = new DonwloadingStatus(destination.getAbsolutePath(), lenData[1]);
 					DownloadingListTableModel.getinstance().addTask(dstat);
-					
+					System.out.println("11 : " + ch.isOpen());
 					if(destination != null) {
-						responseBuf.put((byte) 1);
+						responseBuf.put((byte) 1).flip();
 						while (responseBuf.hasRemaining()) {
 							ch.write(responseBuf).get();
 						}
+						System.out.println("22 : " + ch.isOpen());
 						if(!download(ch, lenData[1], dstat)) { //download failed!
 							dstat.setStatus("ERROR!");
 							throw new IOException("Download aborted while downloading " + destination.getAbsolutePath());
@@ -135,7 +143,7 @@ public class FileReceiver implements Runnable{
 					
 				} else { // user don't want to download this file.
 
-					responseBuf.put((byte) 0);
+					responseBuf.put((byte) 0).flip();
 					while (responseBuf.hasRemaining()) {
 						ch.write(responseBuf).get();
 					}
@@ -170,31 +178,35 @@ public class FileReceiver implements Runnable{
 		logger.log("Downloading");
 		dstat.setStatus("Downloading...");
 		long sizeOfNowSendingFile = len;
+		totalBytesTransfered = 0L;
 		
-		try (FileChannel srcFile = FileChannel.open(destination.toPath(), StandardOpenOption.WRITE)) {
-
-			totalBytesTransfered = 0L;
-
+		try (FileChannel destFile = FileChannel.open(destination.toPath(), StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
 			while (totalBytesTransfered < sizeOfNowSendingFile) {
-				
+				dataBuf.clear();
+				logger.log("Try read " + Main.formatFileSize(dataBuf.remaining()) + " from " + remotAddress); // TODO : debug level
+				System.out.println("33 : " + ch.isOpen());
 				try {
-
-					dataBuf.clear();
-					if (dataBuf.remaining() < (int) (sizeOfNowSendingFile - totalBytesTransfered)) {
-						dataBuf.limit((int) (sizeOfNowSendingFile - totalBytesTransfered));
+					while (dataBuf.hasRemaining()) {
+						int read = ch.read(dataBuf).get();
+						logger.log("Read from server : " + Main.formatFileSize(read)); // TODO : debug level
+						if(read == -1) {
+							logger.log("Socket EOF reached!"); // TODO : better connection close logic
+							//throw new Exception("Server connection closed(EOF reached)! IsOpen : " + ch.isOpen());
+						}
 					}
-
-					while (dataBuf.hasRemaining() && (ch.read(dataBuf).get() != -1)) {}
 
 					dataBuf.flip();
+					logger.log("Try write " + Main.formatFileSize(dataBuf.remaining()) + " to " + destination); // TODO : debug level
+
 
 					while (dataBuf.hasRemaining()) {
-						totalBytesTransfered += srcFile.write(dataBuf);
+						long written = destFile.write(dataBuf);
+						logger.log("Written to file : " + Main.formatFileSize(written)); // TODO : debug level
+						totalBytesTransfered += written;
 					}
-
 				} catch (Exception e) {
 					SwingDialogs.error(taskInfo + "Failed to receive file!",
-							"Cannot receive file : " + destination.getAbsolutePath() + destination.getName() + " ("
+							"Cannot receive file : " + destination.getAbsolutePath() + " ("
 									+ (int) Math.round(100.0 * totalBytesTransfered / sizeOfNowSendingFile) + "%)\n%e%",
 							e, true);
 					return false;
@@ -206,7 +218,7 @@ public class FileReceiver implements Runnable{
 			}
 
 		} catch (IOException e) {
-			SwingDialogs.error(taskInfo + "Failed to handle file!", "Cannot handle file : " + destination.getAbsolutePath() + destination.getName() + "\n%e%", e, true);
+			SwingDialogs.error(taskInfo + "Failed to recieve file!", "Cannot recieve file : " + destination.getAbsolutePath() + destination.getName() + "\n%e%", e, true);
 			return false;
 		}
 		
@@ -228,20 +240,17 @@ public class FileReceiver implements Runnable{
 		
 		try {
 			while (true) {
-
 				final AtomicReference<File> result = new AtomicReference<>();
 				
 				SwingUtilities.invokeAndWait(() -> {
-
 					chooser.setDialogTitle(taskInfo + "Choose a directory to download " + fileName);
 					if (chooser.showOpenDialog(dialog) != JFileChooser.APPROVE_OPTION);
 					File dest1 = chooser.getSelectedFile();
 					result.set(dest1);
 					chooser.setCurrentDirectory(dest1);
-
 				});
 
-				File dest = new File(result.get().getAbsolutePath() + File.separator + fileName);
+				File dest = new File(result.get(), fileName);
 				
 				if (dest.exists()) {
 					if (SwingDialogs.confirm(taskInfo + "File already exists!",

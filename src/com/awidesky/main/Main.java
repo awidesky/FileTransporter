@@ -99,7 +99,7 @@ public class Main {
 		
 		try {
 			File logFolder = new File(new File(".").getAbsoluteFile().getParent() + File.separator + "logs");
-			File logFile = new File(logFolder.getAbsolutePath() + File.separator + "log-" + new SimpleDateFormat("yyyy-MM-dd-kk-mm-ss").format(new Date()) + ".txt");
+			File logFile = new File(logFolder.getAbsolutePath() + File.separator + "log-" + new SimpleDateFormat("yyyy-MM-dd-kk-mm-ss.SSS").format(new Date()) + ".txt");
 			logFolder.mkdirs();
 			logFile.createNewFile();
 			logThread = new LoggerThread(new FileOutputStream(logFile), true);
@@ -179,7 +179,7 @@ public class Main {
 	 * <p>This method does not check about buffer's size.
 	 * <p>This method closes <code>ch</code> when the peer is disconnected.</p>
 	 * 
-	 * @param sendTo A <code>AsynchronousSocketChannel</code> to read from.
+	 * @param readFrom A <code>AsynchronousSocketChannel</code> to read from.
 	 * @param buf <code>ByteBuffer</code> to store read bytes.
 	 * @param errorString When Exception occurred, this method throws <code>new IOException(whenClosed)</code>.
 	 * 
@@ -187,20 +187,15 @@ public class Main {
 	 * 
 	 * @throws Exception 
 	 * */
-	
-	public static boolean readFromChannel(AsynchronousSocketChannel sendTo, ByteBuffer buf, String errorString) throws Exception {
-		int total = 0;
-		int size = buf.remaining();
+	public static boolean readFromChannel(AsynchronousSocketChannel readFrom, ByteBuffer buf, String errorString) throws Exception {
 		try {
-			while (true) {
-				int l = sendTo.read(buf).get();
-				if (l == -1) {
-					sendTo.close();
+			while (buf.hasRemaining()) {
+				if (readFrom.read(buf).get() == -1) {
+					readFrom.close();
 					return false;
 				}
-				if ((total += l) == size)
-					return true;
 			}
+			return true;
 		} catch (Exception e) {
 			throw new Exception(errorString, e);
 		}

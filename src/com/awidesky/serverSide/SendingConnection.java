@@ -110,15 +110,15 @@ public class SendingConnection implements Runnable {
 		
 		for(; i < files.length ; i++) {
 			
-			logger.log(taskInfo + "Sending metadata of " +files[i].getName());
+			logger.log(taskInfo + "Sending metadata of " + files[i].getName());
 			/* Send metadata */
 			ByteBuffer nameBuf = Main.charset.encode(files[i].getName());
 			
 			int nameBufSize = nameBuf.limit();
-			lenBuf.asLongBuffer().put(nameBufSize);
-			lenBuf.asLongBuffer().put(files[i].length());
+			lenBuf.asLongBuffer().put(nameBufSize).put(files[i].length())
+				.compact();
 			
-			try (AsynchronousSocketChannel sock = sendTo) { //TODO : check if there's any error caused by this try resource
+			try {
 				
 				while (lenBuf.hasRemaining()) {
 					sendTo.write(lenBuf).get();
@@ -129,8 +129,12 @@ public class SendingConnection implements Runnable {
 					sendTo.write(nameBuf).get();
 				}
 				nameBuf.clear();
+				logger.log(taskInfo + "Metadata sent. Listen for client response...");
 				
+				//sendTo.read(clientResponse).get();
 				Main.readFromChannel(sendTo, clientResponse, "Tried to read response from client, but client disconnected!");
+				
+				System.out.println("after recieving client response : " + sendTo.isOpen());
 				
 			} catch (Exception e1) {
 				String str = "Cannot send metadata : " + files[i].getAbsolutePath() + files[i].getName() + "\n";
@@ -142,7 +146,9 @@ public class SendingConnection implements Runnable {
 				return;
 			}
 			
-			if(clientResponse.get() == 0) { /* User don't want to download this file, skip it. */
+			byte response = clientResponse.flip().get();
+			logger.log("Client response : " + (int)response);
+			if(response == 0) { /* User don't want to download this file, skip it. */
 				logger.log(taskInfo + "Skip " +files[i].getName() + " because client wanted to.");
 				continue;
 			}
@@ -153,15 +159,29 @@ public class SendingConnection implements Runnable {
 			sizeOfNowSendingFile = files[i].length();
 			totalBytesTransfered = 0L;
 
+			System.out.println("before reading file : " + sendTo.isOpen());
 			try (FileChannel srcFile = FileChannel.open(files[i].toPath(), StandardOpenOption.READ)) {
 
 				while (totalBytesTransfered < sizeOfNowSendingFile) {
+					dataBuf.clear();
+					logger.log("Try read " + Main.formatFileSize(dataBuf.remaining()) + " from " + files[i].getName()); // TODO : debug level
 					
-					while (dataBuf.hasRemaining() && (srcFile.read(dataBuf) != -1)) {}
+					while (dataBuf.hasRemaining()) {
+						int read = srcFile.read(dataBuf);
+						logger.log("Read from file : " + Main.formatFileSize(read)); // TODO : debug level
+						if(read == -1) {
+							logger.log("EOF reached!"); // TODO : debug level
+							if(dataBuf.position() + totalBytesTransfered != sizeOfNowSendingFile)
+								logger.log("File size : %d, total bytes transfered : %d, bytes in buffer : %d".formatted(sizeOfNowSendingFile, totalBytesTransfered, dataBuf.position()));
+								throw new Exception("Unexpected EOF from source file : " + files[i]);
+						}
+					}
 					dataBuf.flip();
+					logger.log("Try send " + Main.formatFileSize(dataBuf.remaining()) + " to " + remoteAddr); // TODO : debug level
 
 					while (dataBuf.hasRemaining()) {
 						long sentNow = sendTo.write(nameBuf).get();
+						logger.log("Sent to client : " + Main.formatFileSize(sentNow)); // TODO : debug level
 						if (sentNow < 0) {
 							/**
 							 * Probably dead code, since if either socket is closed,
@@ -180,7 +200,7 @@ public class SendingConnection implements Runnable {
 
 			} catch (Exception e) {
 				
-				String errStr =  "Cannot send file : " + files[i].getAbsolutePath() + files[i].getName() + " ("
+				String errStr =  "Cannot send file : " + files[i].getAbsolutePath() + " ("
 						+ (int) Math.round(100.0 * totalBytesTransfered / sizeOfNowSendingFile) + "%)\n";
 				if(isAborted) { 
 					logger.log(taskInfo + "Thread interrupted while connecting with : " + getIP() + ":" + getPort() + ", and download aborted!\n" + errStr);

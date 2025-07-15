@@ -69,7 +69,7 @@ public class FileSender implements Runnable {
 				Future<AsynchronousSocketChannel> fu = server.accept();
 				SendingConnection sc = new SendingConnection(fu.get(), files);
 				ClientListTableModel.getinstance().addConnection(sc);
-				SwingDialogs.information("Connected to a client!", "Connected to " + sc.getIP() + ":" + sc.getPort(), true);
+				SwingDialogs.information("Connected to a Client!", "Connected to " + sc.getIP() + ":" + sc.getPort(), true);
 
 				sc.setFuture(Main.queueJob(sc));
 
