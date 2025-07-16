@@ -10,7 +10,7 @@ import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.util.concurrent.Future;
 
-import com.awidesky.main.Main;
+import com.awidesky.Main;
 import com.awidesky.util.SwingDialogs;
 import com.awidesky.util.TaskLogger;
 

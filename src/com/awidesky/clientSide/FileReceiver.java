@@ -16,7 +16,7 @@ import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.SwingUtilities;
 
-import com.awidesky.main.Main;
+import com.awidesky.Main;
 import com.awidesky.util.SwingDialogs;
 import com.awidesky.util.TaskLogger;
 

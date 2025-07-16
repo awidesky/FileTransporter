@@ -11,7 +11,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.Future;
 
-import com.awidesky.main.Main;
+import com.awidesky.Main;
 import com.awidesky.util.SwingDialogs;
 import com.awidesky.util.TaskLogger;
 

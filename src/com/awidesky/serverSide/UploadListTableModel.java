@@ -8,7 +8,7 @@ import java.util.List;
 import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
 
-import com.awidesky.main.Main;
+import com.awidesky.Main;
 import com.awidesky.util.SwingDialogs;
 
 public class UploadListTableModel extends AbstractTableModel {

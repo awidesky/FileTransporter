@@ -1,4 +1,4 @@
-package com.awidesky.main;
+package com.awidesky.gui;
 
 import java.awt.Component;
 

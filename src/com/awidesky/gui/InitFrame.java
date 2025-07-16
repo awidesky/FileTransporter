@@ -1,4 +1,4 @@
-package com.awidesky.main;
+package com.awidesky.gui;
 
 import java.awt.Dimension;
 import java.awt.Insets;
@@ -11,6 +11,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
 
+import com.awidesky.Main;
 import com.awidesky.clientSide.ClientFrame;
 import com.awidesky.serverSide.ServerFrame;
 import com.awidesky.util.TaskLogger;

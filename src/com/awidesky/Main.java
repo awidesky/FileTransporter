@@ -1,4 +1,4 @@
-package com.awidesky.main;
+package com.awidesky;
 
 import java.awt.Image;
 import java.io.File;
@@ -20,6 +20,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
+import com.awidesky.gui.InitFrame;
 import com.awidesky.util.LoggerThread;
 import com.awidesky.util.SwingDialogs;
 import com.awidesky.util.TaskLogger;

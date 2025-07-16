@@ -22,9 +22,9 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.filechooser.FileFilter;
 
-import com.awidesky.main.ImageViewer;
-import com.awidesky.main.Main;
-import com.awidesky.main.ProgressRenderer;
+import com.awidesky.Main;
+import com.awidesky.gui.ImageViewer;
+import com.awidesky.gui.ProgressRenderer;
 import com.awidesky.util.SwingDialogs;
 import com.awidesky.util.TaskLogger;
 

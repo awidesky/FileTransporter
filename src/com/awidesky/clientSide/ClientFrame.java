@@ -15,8 +15,8 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
-import com.awidesky.main.Main;
-import com.awidesky.main.ProgressRenderer;
+import com.awidesky.Main;
+import com.awidesky.gui.ProgressRenderer;
 import com.awidesky.util.SwingDialogs;
 import com.awidesky.util.TaskLogger;
 
