@@ -8,6 +8,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.AsynchronousSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -200,6 +201,16 @@ public class Main {
 		} catch (Exception e) {
 			throw new Exception(errorString, e);
 		}
+	}
+	
+	public static boolean readFromChannel(SocketChannel readFrom, ByteBuffer buf) throws Exception {
+		while (buf.hasRemaining()) {
+			if (readFrom.read(buf) == -1) {
+				readFrom.close();
+				return false;
+			}
+		}
+		return true;
 	}
 
 	public static ExecutorService getThreadPool() {

@@ -64,14 +64,21 @@ public class DownloadingListTableModel extends AbstractTableModel {
 
 
 	public void clearDone() {
-
+		if(!SwingUtilities.isEventDispatchThread()) {
+			SwingUtilities.invokeLater(this::clearDone);
+			return;
+		}
+		
 		rows.removeIf(DonwloadingStatus::isFinished);
 		fireTableDataChanged();
-
 	}
 	
 	public void disconectSelected(int[] selected) {
-
+		if(!SwingUtilities.isEventDispatchThread()) {
+			SwingUtilities.invokeLater(() -> disconectSelected(selected));
+			return;
+		}
+		
 		for (int r : selected) {
 			if (rows.get(r).isFinished()) { 
 				continue;
@@ -95,7 +102,6 @@ public class DownloadingListTableModel extends AbstractTableModel {
 	 * @return if user agreed to disconnect or all work queued were done.
 	 * */
 	public boolean clearAll() {
-
 		if(rows.isEmpty()) return true;
 		
 		rows.removeIf(DonwloadingStatus::isFinished);
@@ -106,7 +112,7 @@ public class DownloadingListTableModel extends AbstractTableModel {
 				return false;
 
 			rows.forEach((r) -> {
-				FileReceiver.getInstance().disconnect();
+				FileReceiver.getInstance().disconnect(); //TODO : threading?
 			});
 		}
 		
@@ -117,12 +123,10 @@ public class DownloadingListTableModel extends AbstractTableModel {
 	}
 
 	public void addTask(DonwloadingStatus r) {
-
 		SwingUtilities.invokeLater(() -> {
 			rows.add(r);
 			fireTableRowsInserted(rows.size() - 1, rows.size() - 1);
 		});
-
 	}
 
 
@@ -131,9 +135,7 @@ public class DownloadingListTableModel extends AbstractTableModel {
 	}
 
 	public void updated(DonwloadingStatus r) {
-
 		SwingUtilities.invokeLater(() -> { fireTableRowsUpdated(rows.indexOf(r), rows.indexOf(r)); });
-
 	}
 	public static DownloadingListTableModel getinstance() {
 

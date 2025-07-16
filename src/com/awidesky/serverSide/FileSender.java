@@ -6,8 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.net.URL;
-import java.nio.channels.AsynchronousServerSocketChannel;
-import java.nio.channels.AsynchronousSocketChannel;
+import java.nio.channels.ServerSocketChannel;
 import java.util.concurrent.Future;
 
 import com.awidesky.Main;
@@ -23,7 +22,7 @@ public class FileSender implements Runnable {
 	private boolean aborted = false;
 	private static String thisIP = null;
 
-	private AsynchronousServerSocketChannel server = null;
+	private ServerSocketChannel server = null;
 	
 	private TaskLogger logger;
 	
@@ -57,8 +56,7 @@ public class FileSender implements Runnable {
 	public void run() {
 
 		try {
-			
-			server = AsynchronousServerSocketChannel.open(Main.channelGroup);
+			server = ServerSocketChannel.open();
 
 			server.bind(new InetSocketAddress(port));
 			SwingDialogs.information("Server opened!", "Server is wating connection from " + getselfIP() + ":" + port, false);
@@ -66,10 +64,9 @@ public class FileSender implements Runnable {
 			while (!Main.isAppStopped() && !future.isCancelled()) {
 
 				logger.log("Server|Ready for connection...");
-				Future<AsynchronousSocketChannel> fu = server.accept();
-				SendingConnection sc = new SendingConnection(fu.get(), files);
+				SendingConnection sc = new SendingConnection(server.accept(), files);
 				ClientListTableModel.getinstance().addConnection(sc);
-				SwingDialogs.information("Connected to a Client!", "Connected to " + sc.getIP() + ":" + sc.getPort(), true);
+				SwingDialogs.information("Connected to a Client!", "Connection from " + sc.getIP() + ":" + sc.getPort(), true);
 
 				sc.setFuture(Main.queueJob(sc));
 

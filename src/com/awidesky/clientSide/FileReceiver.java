@@ -5,9 +5,9 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.FileChannel;
+import java.nio.channels.SocketChannel;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
@@ -26,7 +26,7 @@ public class FileReceiver implements Runnable{
 
 	private TaskLogger logger;
 	
-	private long totalBytesTransfered;
+	private long total;
 	private boolean isAborted = false;
 	
 	private static JFileChooser chooser = new JFileChooser((String)null);
@@ -37,12 +37,12 @@ public class FileReceiver implements Runnable{
 	private InetSocketAddress remotAddress;
 	
 	private ByteBuffer lenBuf = ByteBuffer.allocate(Main.lenBufSize);
+	private ByteBuffer nameBuf = ByteBuffer.allocate(128);
 	private ByteBuffer responseBuf = ByteBuffer.allocate(1);
 	private String taskInfo;
 	private Future<?> future;
 	/** called when process aborted/cancelled, so that the reset GUI to initial state */
 	private Runnable resetCallback;
-	private ByteBuffer dataBuf = ByteBuffer.allocateDirect(Main.transferChunk);
 
 	private File destination;
 
@@ -84,15 +84,15 @@ public class FileReceiver implements Runnable{
 	@Override
 	public void run() {
 
-		taskInfo = Thread.currentThread().toString() + taskInfo;
+		taskInfo = Thread.currentThread().getName() + " " + taskInfo;
 		String fileName = null;
 		InetSocketAddress address = new InetSocketAddress(ip, port);
 		boolean gotMetadata = false; // is metadata received?
 		boolean completed = false; // is connection completed without problem?
-		try (AsynchronousSocketChannel ch = AsynchronousSocketChannel.open(Main.channelGroup)) {
+		try (SocketChannel ch = SocketChannel.open()) {
 
 			logger.log(taskInfo + "Connecting to Server...");
-			ch.connect(address).get();
+			ch.connect(address);
 			remotAddress = (InetSocketAddress) ch.getRemoteAddress();
 			logger.log("Connected to : " + remotAddress);
 			SwingDialogs.information("Connected to the Server!", "Connected to " + remotAddress.getHostString() + ":" + remotAddress.getPort(), true);
@@ -100,59 +100,67 @@ public class FileReceiver implements Runnable{
 			while (!isAborted) {
 				
 				lenBuf.clear();
+				nameBuf.clear();
 				responseBuf.clear();
 				
 				gotMetadata = false;
 				long[] lenData = new long[2]; // first is length of file name, and second is length of the file(both
 												// counted in byte).
 				
-				if(Main.readFromChannel(ch, lenBuf, "Server disconnected while reading length of the file!") == false) {
-					System.out.println("read length return false");
+				if(!Main.readFromChannel(ch, lenBuf)) {
+					System.out.println("read length return false, lenBuf position : " + lenBuf.position());
 					completed = true;
 					break;
 				}
 
 				lenBuf.flip().asLongBuffer().get(lenData);
-				logger.log("File name lenght : " + lenData[0] + ", length of file : " + Main.formatFileSize(lenData[1]));
+				logger.log("New file metadate recieved!");
+				logger.log("File name length : " + lenData[0] + ", length of file : " + Main.formatFileSize(lenData[1]) + "(" + lenData[1] + "byte)");
 
-				ByteBuffer nameBuf = ByteBuffer.allocate((int) lenData[0]);
-				Main.readFromChannel(ch, nameBuf, "Server disconnected while reading name of the file!");
+				if(nameBuf.remaining() < lenData[0]) { //resize nameBuf if needed
+					int newSize = nameBuf.capacity();
+					while(newSize < lenData[0]) newSize *= 2;
+					nameBuf = ByteBuffer.allocate(newSize);
+				}
+				nameBuf.limit((int) lenData[0]);
+				
+				if(!Main.readFromChannel(ch, nameBuf)) {
+					System.out.println("read name return false, nameBuf position : " + nameBuf.position());
+					completed = false;
+					break;
+				}
 
 				fileName = Main.charset.decode(nameBuf.flip()).toString();
-
+				logger.log("File name : " + fileName);
 				gotMetadata = true;
 
-				if(SwingDialogs.confirm(taskInfo + "Download file?", "Download " + fileName + "(" + Main.formatFileSize(lenData[1]) +")")) { // Ask user where to save the received file.
-					
+				if(SwingDialogs.confirm(taskInfo + "Download file?", "Download \"" + fileName + "\" (" + Main.formatFileSize(lenData[1]) +")")) { // Ask user where to save the received file.
 					destination = chooseSaveDest(fileName);
 					DonwloadingStatus dstat = new DonwloadingStatus(destination.getAbsolutePath(), lenData[1]);
 					DownloadingListTableModel.getinstance().addTask(dstat);
-					System.out.println("11 : " + ch.isOpen());
 					if(destination != null) {
+						logger.log("Sending download request...");
 						responseBuf.put((byte) 1).flip();
 						while (responseBuf.hasRemaining()) {
-							ch.write(responseBuf).get();
+							ch.write(responseBuf);
 						}
-						System.out.println("22 : " + ch.isOpen());
+						
+						logger.log("Initiate downloading " + fileName);
 						if(!download(ch, lenData[1], dstat)) { //download failed!
 							dstat.setStatus("ERROR!");
 							throw new IOException("Download aborted while downloading " + destination.getAbsolutePath());
 						}
 						dstat.setStatus("Done!");
 					}
-					
 				} else { // user don't want to download this file.
-
 					responseBuf.put((byte) 0).flip();
 					while (responseBuf.hasRemaining()) {
-						ch.write(responseBuf).get();
+						ch.write(responseBuf);
 					}
-					
 				}
 				
+				logger.log("Download Success!\n");
 			}
-			
-
 		} catch (ClosedByInterruptException inter) {
 			if(isAborted) SwingDialogs.error(taskInfo + "Failed to receive files!", "Cannot receive file " + fileName + " from :" + address.toString() + ", and download aborted!\n%e%", inter, true);
 			else SwingDialogs.error(taskInfo + "Failed to receive files!", "Thread interrupted while connecting with : " + address.toString() + ", and download aborted!\n%e%", inter, true);
@@ -173,57 +181,31 @@ public class FileReceiver implements Runnable{
 	 * @param dstat 
 	 * @return <code>true</code> if download finished.
 	 * */
-	private boolean download(AsynchronousSocketChannel ch, long len, DonwloadingStatus dstat) {
+	private boolean download(SocketChannel ch, long len, DonwloadingStatus dstat) {
 
-		logger.log("Downloading");
 		dstat.setStatus("Downloading...");
-		long sizeOfNowSendingFile = len;
-		totalBytesTransfered = 0L;
+		long fileSize = len;
+		total = 0L;
 		
-		try (FileChannel destFile = FileChannel.open(destination.toPath(), StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
-			while (totalBytesTransfered < sizeOfNowSendingFile) {
-				dataBuf.clear();
-				logger.log("Try read " + Main.formatFileSize(dataBuf.remaining()) + " from " + remotAddress); // TODO : debug level
-				System.out.println("33 : " + ch.isOpen());
-				try {
-					while (dataBuf.hasRemaining()) {
-						int read = ch.read(dataBuf).get();
-						logger.log("Read from server : " + Main.formatFileSize(read)); // TODO : debug level
-						if(read == -1) {
-							logger.log("Socket EOF reached!"); // TODO : better connection close logic
-							//throw new Exception("Server connection closed(EOF reached)! IsOpen : " + ch.isOpen());
-						}
-					}
+		try (FileChannel dest = FileChannel.open(destination.toPath(), StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
+			while (total < fileSize) {
+				logger.log("Try transfer from " + remotAddress + " to " + destination.getName()); // TODO : debug level, relativize
 
-					dataBuf.flip();
-					logger.log("Try write " + Main.formatFileSize(dataBuf.remaining()) + " to " + destination); // TODO : debug level
+				long read = dest.transferFrom(ch, total, Math.min(Main.transferChunk, fileSize - total));
+				total += read;
+				logger.log("Transferred %s (total : %s of %s) to %s" // TODO : debug level
+						.formatted(Main.formatFileSize(read), Main.formatFileSize(total), Main.formatFileSize(fileSize), remotAddress));
 
-
-					while (dataBuf.hasRemaining()) {
-						long written = destFile.write(dataBuf);
-						logger.log("Written to file : " + Main.formatFileSize(written)); // TODO : debug level
-						totalBytesTransfered += written;
-					}
-				} catch (Exception e) {
-					SwingDialogs.error(taskInfo + "Failed to receive file!",
-							"Cannot receive file : " + destination.getAbsolutePath() + " ("
-									+ (int) Math.round(100.0 * totalBytesTransfered / sizeOfNowSendingFile) + "%)\n%e%",
-							e, true);
-					return false;
-				}
-
-				dstat.setProgress((int) Math.round(100.0 * totalBytesTransfered / sizeOfNowSendingFile));
-				logger.log(taskInfo + "Received " + totalBytesTransfered + "byte (" + dstat.getProgress() + "%) from " + ip + " to " + destination.getName());
+				dstat.setProgress((int) Math.round(100.0 * total / fileSize));
+				logger.log("Downloaded " + total + "byte (" + dstat.getProgress() + "%) from " + remotAddress + " to " + destination.getName());
 				DownloadingListTableModel.getinstance().updated(dstat);
 			}
-
 		} catch (IOException e) {
 			SwingDialogs.error(taskInfo + "Failed to recieve file!", "Cannot recieve file : " + destination.getAbsolutePath() + destination.getName() + "\n%e%", e, true);
 			return false;
 		}
 		
 		return true;
-		
 	}
 
 
