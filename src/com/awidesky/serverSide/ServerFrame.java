@@ -32,7 +32,7 @@ public class ServerFrame extends JFrame {
 
 	private static final long serialVersionUID = 8677739105321293193L;
 	
-	private FileSender server = null;
+	private Server server = null;
 	private boolean isStarted = false;
 	
 	private TaskLogger logger = Main.getLogger("[Server]");
@@ -298,7 +298,7 @@ public class ServerFrame extends JFrame {
 		disconnectSelected.setEnabled(true);
 		disconnectAll.setEnabled(true);
 
-		server = new FileSender(i, UploadListTableModel.getinstance().getData().toArray(new File[]{}), this::guiResetCallback, logger);
+		server = new Server(i, UploadListTableModel.getinstance().getData().toArray(new File[]{}), this::guiResetCallback, logger);
 		server.setFuture(Main.queueJob(server));
 		
 	}

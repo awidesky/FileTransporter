@@ -86,13 +86,12 @@ public class FileReceiver implements Runnable{
 
 		taskInfo = Thread.currentThread().getName() + " " + taskInfo;
 		String fileName = null;
-		InetSocketAddress address = new InetSocketAddress(ip, port);
 		boolean gotMetadata = false; // is metadata received?
 		boolean completed = false; // is connection completed without problem?
 		try (SocketChannel ch = SocketChannel.open()) {
 
 			logger.log(taskInfo + "Connecting to Server...");
-			ch.connect(address);
+			ch.connect(new InetSocketAddress(ip, port));
 			remotAddress = (InetSocketAddress) ch.getRemoteAddress();
 			logger.log("Connected to : " + remotAddress);
 			SwingDialogs.information("Connected to the Server!", "Connected to " + remotAddress.getHostString() + ":" + remotAddress.getPort(), true);
@@ -109,11 +108,17 @@ public class FileReceiver implements Runnable{
 				
 				if(!Main.readFromChannel(ch, lenBuf)) {
 					System.out.println("read length return false, lenBuf position : " + lenBuf.position());
-					completed = true;
+					completed = false;
 					break;
 				}
 
 				lenBuf.flip().asLongBuffer().get(lenData);
+				if(lenData[0] == -1 && lenData[1] == -1) {
+					logger.log("File transfer finished! Closing connection...");
+					completed = true;
+					break;
+				}
+				
 				logger.log("New file metadate recieved!");
 				logger.log("File name length : " + lenData[0] + ", length of file : " + Main.formatFileSize(lenData[1]) + "(" + lenData[1] + "byte)");
 
@@ -162,13 +167,13 @@ public class FileReceiver implements Runnable{
 				logger.log("Download Success!\n");
 			}
 		} catch (ClosedByInterruptException inter) {
-			if(isAborted) SwingDialogs.error(taskInfo + "Failed to receive files!", "Cannot receive file " + fileName + " from :" + address.toString() + ", and download aborted!\n%e%", inter, true);
-			else SwingDialogs.error(taskInfo + "Failed to receive files!", "Thread interrupted while connecting with : " + address.toString() + ", and download aborted!\n%e%", inter, true);
+			if(isAborted) SwingDialogs.error(taskInfo + "Failed to receive files!", "Cannot receive file " + fileName + " from :" + remotAddress + ", and download aborted!\n%e%", inter, true);
+			else SwingDialogs.error(taskInfo + "Failed to receive files!", "Thread interrupted while connecting with : " + remotAddress + ", and download aborted!\n%e%", inter, true);
 		} catch (Exception e) {
-			if(!gotMetadata) SwingDialogs.error(taskInfo + "Failed to receive metadata!", "Cannot receive metadata from :" + address.toString() + "\n%e%", e, true); 
-			else SwingDialogs.error(taskInfo + "Failed to receive files!", "Cannot receive file from : " + address.toString() + "\n%e%", e, true);
+			if(!gotMetadata) SwingDialogs.error(taskInfo + "Failed to receive metadata!", "Cannot receive metadata from :" + remotAddress + "\n%e%", e, true); 
+			else SwingDialogs.error(taskInfo + "Failed to receive files!", "Cannot receive file from : " + remotAddress + "\n%e%", e, true);
 		} finally {
-			SwingDialogs.information("Connection has closed", "Connection from :" + address.toString() + " has closed with" + (completed ? "out" : " a") + " error(s)!", true);
+			SwingDialogs.information("Connection has closed", "Connection from :" + remotAddress + " has closed with" + (completed ? "out" : " a") + " error(s)!", true);
 			resetCallback.run();
 		}
 		

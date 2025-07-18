@@ -203,7 +203,7 @@ public class Main {
 		}
 	}
 	
-	public static boolean readFromChannel(SocketChannel readFrom, ByteBuffer buf) throws Exception {
+	public static boolean readFromChannel(SocketChannel readFrom, ByteBuffer buf) throws IOException {
 		while (buf.hasRemaining()) {
 			if (readFrom.read(buf) == -1) {
 				readFrom.close();

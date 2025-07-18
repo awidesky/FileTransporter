@@ -14,7 +14,7 @@ public class ClientListTableModel extends AbstractTableModel {
 
 	private static final long serialVersionUID = 3855477049816688267L;
 	private final static ClientListTableModel instance = new ClientListTableModel();
-	private List<SendingConnection> rows = new ArrayList<>(); 
+	private List<ClientConnection> rows = new ArrayList<>(); 
 	
 	private ClientListTableModel() {}
 
@@ -52,7 +52,7 @@ public class ClientListTableModel extends AbstractTableModel {
 		case 0: // Client
 			return rows.get(rowIndex).getIP();
 		case 1: // Now sending...
-			return rows.get(rowIndex).getNowSendingFileString();
+			return rows.get(rowIndex).getNowSendingFile(); //TODO: was getNowSendingFileString
 		case 2: // Progress
 			return rows.get(rowIndex).getProgress();
 		}
@@ -82,7 +82,7 @@ public class ClientListTableModel extends AbstractTableModel {
 			}
 		}
 		
-		LinkedList<SendingConnection> temp = new LinkedList<>();
+		LinkedList<ClientConnection> temp = new LinkedList<>();
 		for (int r : selected) temp.add(rows.get(r));
 		rows.removeAll(temp);
 		
@@ -98,7 +98,7 @@ public class ClientListTableModel extends AbstractTableModel {
 
 		if(rows.isEmpty()) return true;
 		
-		rows.removeIf(SendingConnection::isFinished);
+		rows.removeIf(ClientConnection::isFinished);
 		
 		if (!rows.isEmpty()) {
 			if (!SwingDialogs.confirm("Before clearing!",
@@ -116,7 +116,7 @@ public class ClientListTableModel extends AbstractTableModel {
 
 	}
 
-	public void addConnection(SendingConnection r) {
+	public void addConnection(ClientConnection r) {
 
 		SwingUtilities.invokeLater(() -> {
 			rows.add(r);
@@ -125,13 +125,13 @@ public class ClientListTableModel extends AbstractTableModel {
 
 	}
 
-	public void updated(SendingConnection r) {
+	public void updated(ClientConnection r) {
 
 		SwingUtilities.invokeLater(() -> { fireTableRowsUpdated(rows.indexOf(r), rows.indexOf(r)); });
 
 	}
 	
-	public List<SendingConnection> getData() {
+	public List<ClientConnection> getData() {
 		return rows;
 	}
 	
