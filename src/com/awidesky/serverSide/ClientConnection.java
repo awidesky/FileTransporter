@@ -43,12 +43,13 @@ public class ClientConnection implements Runnable {
 	
 	private TaskLogger logger;
 	
-	public ClientConnection(TaskLogger logger, SocketChannel socket, ConcurrentLinkedQueue<File> fileQueue) {
+	public ClientConnection(TaskLogger logger, SocketChannel socket, InetSocketAddress remoteAddr, ConcurrentLinkedQueue<File> fileQueue) {
 		this.sendTo = socket;
+		this.remoteAddr = remoteAddr;
 		this.fileQueue = fileQueue;
 		this.status = "Preparing...";
 		this.logger = logger;
-
+		
 		logger.log("Connected to " + remoteAddr);
 	}
 	
@@ -84,6 +85,8 @@ public class ClientConnection implements Runnable {
 		
 		logger.log("Transport finished. Try connection close...");
 		try {
+			lenBuf.clear().asLongBuffer().put(-1).put(-1).flip();
+			while(lenBuf.hasRemaining()) sendTo.write(lenBuf);
 			sendTo.close();
 		} catch (IOException e) {
 			SwingDialogs.error("Failed to close connection with client!", "%e%", e, false);
@@ -97,7 +100,7 @@ public class ClientConnection implements Runnable {
 		lenBuf.clear();
 		nameBuf.clear();
 
-		logger.log("Sending metadata of " + curFile.getName());
+		logger.log("Sending metadata of \"" + curFile.getName() + "\"");
 		/* Send metadata */
 
 		byte response;
@@ -165,21 +168,16 @@ public class ClientConnection implements Runnable {
 		lenBuf.clear();
 		nameBuf.clear();
 		
-		if (f == null) { //TODO : close method
-			lenBuf.asLongBuffer().put(-1).put(-1).compact();
-			nameBuf.position(nameBuf.limit());
-		} else {
-			byte[] name = f.getName().getBytes(Main.charset);
-			if (nameBuf.remaining() < name.length) { //resize nameBuf if needed
-				int newSize = nameBuf.capacity();
-				while (newSize < name.length)
-					newSize *= 2;
-				nameBuf = ByteBuffer.allocate(newSize);
-			}
-			lenBuf.asLongBuffer().put(nameBuf.limit()).put(f.length()).compact();
-			nameBuf.put(name).flip();
+		byte[] name = f.getName().getBytes(Main.charset);
+		if (nameBuf.remaining() < name.length) { //resize nameBuf if needed
+			int newSize = nameBuf.capacity();
+			while (newSize < name.length)
+				newSize *= 2;
+			nameBuf = ByteBuffer.allocate(newSize);
 		}
-		
+		nameBuf.put(name).flip();
+		lenBuf.asLongBuffer().put(nameBuf.remaining()).put(f.length()).flip();
+
 		while (lenBuf.hasRemaining()) {
 			sendTo.write(lenBuf);
 		}

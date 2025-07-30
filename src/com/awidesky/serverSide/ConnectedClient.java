@@ -34,9 +34,11 @@ public class ConnectedClient {
 	}
 	
 	
-	public void addChannel(SocketChannel channel, InetSocketAddress remoteAddr) {
+	public ClientConnection addChannel(SocketChannel channel, InetSocketAddress remoteAddr) {
 		TaskLogger logger = Main.getLogger("[%s_%s] ".formatted(uuid.toString().substring(0, 9), remoteAddr.toString()));
-		connList.add(new ClientConnection(logger, channel, fileQueue));
+		ClientConnection connection = new ClientConnection(logger, channel, remoteAddr, fileQueue);
+		connList.add(connection);
+		return connection;
 	}
 
 }

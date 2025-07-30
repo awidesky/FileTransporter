@@ -9,6 +9,7 @@ import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.file.StandardOpenOption;
+import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -35,6 +36,7 @@ public class FileReceiver implements Runnable{
 	private String ip;//TODO : needed?
 	private int port;
 	private InetSocketAddress remotAddress;
+	private UUID uuid;
 	
 	private ByteBuffer lenBuf = ByteBuffer.allocate(Main.lenBufSize);
 	private ByteBuffer nameBuf = ByteBuffer.allocate(128);
@@ -94,6 +96,9 @@ public class FileReceiver implements Runnable{
 			ch.connect(new InetSocketAddress(ip, port));
 			remotAddress = (InetSocketAddress) ch.getRemoteAddress();
 			logger.log("Connected to : " + remotAddress);
+
+			getUUID(ch);
+			
 			SwingDialogs.information("Connected to the Server!", "Connected to " + remotAddress.getHostString() + ":" + remotAddress.getPort(), true);
 			
 			while (!isAborted) {
@@ -173,10 +178,27 @@ public class FileReceiver implements Runnable{
 			if(!gotMetadata) SwingDialogs.error(taskInfo + "Failed to receive metadata!", "Cannot receive metadata from :" + remotAddress + "\n%e%", e, true); 
 			else SwingDialogs.error(taskInfo + "Failed to receive files!", "Cannot receive file from : " + remotAddress + "\n%e%", e, true);
 		} finally {
-			SwingDialogs.information("Connection has closed", "Connection from :" + remotAddress + " has closed with" + (completed ? "out" : " a") + " error(s)!", true);
+			SwingDialogs.information("Connection has closed", "Connection from :" + remotAddress + " has closed " + (completed ? "successfully!" : "with error(s)!"), true);
 			resetCallback.run();
 		}
 		
+	}
+	
+	private void getUUID(SocketChannel ch) throws IOException {
+		logger.log("Send empty UUID for identification..."); //TODO : multiple connection?
+		
+		ByteBuffer buf = ByteBuffer.allocate(16);
+		buf.asLongBuffer().put(0).put(0).flip();
+		
+		while(buf.hasRemaining()) ch.write(buf);
+		
+		buf.clear();
+		
+		while(buf.hasRemaining()) ch.read(buf);
+		long[] bits = new long[2];
+		buf.flip().asLongBuffer().get(bits);
+		this.uuid = new UUID(bits[0], bits[1]);
+		logger.log("Recieved UUID : " + uuid);
 	}
 
 

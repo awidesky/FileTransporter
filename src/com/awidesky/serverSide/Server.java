@@ -72,10 +72,9 @@ public class Server implements Runnable {
 
 				logger.log("Server|Ready for connection...");
 				
-				ConnectedClient client = connectClient(server.accept());
-				if(client == null) continue;
+				ClientConnection sc = connectClient(server.accept());
+				if(sc== null) continue;
 				
-				ClientConnection sc = null;// new ClientConnection(server.accept(), files);
 				
 				ClientListTableModel.getinstance().addConnection(sc); //TODO : use tabbedpane per client
 				
@@ -102,11 +101,14 @@ public class Server implements Runnable {
 
 	}
 
-	private ConnectedClient connectClient(SocketChannel accepted) {
+	private ClientConnection connectClient(SocketChannel accepted) {
 		try {
 			InetSocketAddress remotAddress = (InetSocketAddress)accepted.getRemoteAddress();
 			ByteBuffer buf = ByteBuffer.allocate(16);
+			
+			SwingDialogs.information("Connected to a Client!", "Connection from " + remotAddress, true);
 
+			logger.log("Recieving UUID...");
 			while(buf.hasRemaining()) accepted.read(buf);
 			long[] bits = new long[2];
 			buf.flip().asLongBuffer().get(bits);
@@ -115,19 +117,21 @@ public class Server implements Runnable {
 			if(bits[0] == 0 && bits[1] == 0) {
 				uu = Stream.generate(UUID::randomUUID)
 						.filter(u -> !clients.keySet().contains(u))
-						.filter(u -> u.getMostSignificantBits() != 0 || u.getLeastSignificantBits() != 0).findFirst().get();
+						.filter(u -> u.getMostSignificantBits() != 0 || u.getLeastSignificantBits() != 0)
+						.findFirst().get();
+				logger.log("Empty UUID, send a new one : " + uu);
 				
-				buf.asLongBuffer().put(uu.getMostSignificantBits()).put(uu.getLeastSignificantBits()).flip();
+				buf.clear().asLongBuffer().put(uu.getMostSignificantBits()).put(uu.getLeastSignificantBits()).flip();
 				while(buf.hasRemaining()) accepted.write(buf);
+				logger.log("UUID sent");
 			} else {
 				uu = new UUID(bits[0], bits[1]);
+				logger.log("Existing UUID : " + uu + ", exist : " + clients.contains(uu)); //TODO : if false??
 			}
 			
-			SwingDialogs.information("Connected to a Client!", "Connection from " + remotAddress, true);
 
 			ConnectedClient client = clients.computeIfAbsent(uu, u -> new ConnectedClient(u, files));
-			client.addChannel(accepted, remotAddress);
-			return client;
+			return client.addChannel(accepted, remotAddress);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
