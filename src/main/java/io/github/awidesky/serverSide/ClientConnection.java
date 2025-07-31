@@ -1,4 +1,4 @@
-package com.awidesky.serverSide;
+package io.github.awidesky.serverSide;
 
 import java.io.File;
 import java.io.IOException;
@@ -10,9 +10,9 @@ import java.nio.file.StandardOpenOption;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Future;
 
-import com.awidesky.Main;
-import com.awidesky.util.SwingDialogs;
-import com.awidesky.util.TaskLogger;
+import io.github.awidesky.Main;
+import io.github.awidesky.guiUtil.SwingDialogs;
+import io.github.awidesky.guiUtil.TaskLogger;
 
 
 /**
@@ -50,7 +50,7 @@ public class ClientConnection implements Runnable {
 		this.status = "Preparing...";
 		this.logger = logger;
 		
-		logger.log("Connected to " + remoteAddr);
+		logger.info("Connected to " + remoteAddr);
 	}
 	
 	public void setFuture(Future<?> f) {
@@ -84,7 +84,7 @@ public class ClientConnection implements Runnable {
 			send();
 		}
 		
-		logger.log("Transport finished. Try connection close...");
+		logger.info("Transport finished. Try connection close...");
 		try {
 			lenBuf.clear().asLongBuffer().put(-1).put(-1).flip();
 			while(lenBuf.hasRemaining()) sendTo.write(lenBuf);
@@ -92,7 +92,7 @@ public class ClientConnection implements Runnable {
 		} catch (IOException e) {
 			SwingDialogs.error("Failed to close connection with client!", "%e%", e, false);
 		}
-		logger.log("Connection closed. Tasked completed.");
+		logger.info("Connection closed. Tasked completed.");
 	}
 	
 	private void send() {
@@ -101,7 +101,7 @@ public class ClientConnection implements Runnable {
 		lenBuf.clear();
 		nameBuf.clear();
 
-		logger.log("Sending metadata of \"" + curFile.getName() + "\"");
+		logger.info("Sending metadata of \"" + curFile.getName() + "\"");
 		/* Send metadata */
 
 		byte response;
@@ -110,21 +110,21 @@ public class ClientConnection implements Runnable {
 		} catch (Exception e1) {
 			String str = "Cannot send metadata : " + curFile.getAbsolutePath() + "\n";
 			if(isAborted) {
-				logger.log(str +"Thread interrupted while connecting with : " + remoteAddr.toString() + ", and download aborted!\n");
+				logger.info(str +"Thread interrupted while connecting with : " + remoteAddr.toString() + ", and download aborted!\n");
 			}
 			SwingDialogs.error("Failed to send metadata!", str + "%e%", e1, false);
 			status = "ERROR!";
 			return;
 		}
 
-		logger.log("Client response : " + (int)response);
+		logger.info("Client response : " + (int)response);
 
 		if(response == 0) { /* User don't want to download this curFile, skip it. */
-			logger.log("Skip " +curFile.getName() + " because client wanted to.");
+			logger.info("Skip " +curFile.getName() + " because client wanted to.");
 			return;
 		}
 
-		logger.log("Sending " + curFile.getAbsolutePath());
+		logger.info("Sending " + curFile.getAbsolutePath());
 		status = "Sending...";
 		progress = 0;
 		fileSize = curFile.length();
@@ -133,15 +133,15 @@ public class ClientConnection implements Runnable {
 		try (FileChannel srcFile = FileChannel.open(curFile.toPath(), StandardOpenOption.READ)) {
 
 			while (total < fileSize) {
-				logger.log("Try transfer to " + remoteAddr); // TODO : debug level
+				logger.info("Try transfer to " + remoteAddr); // TODO : debug level
 
 				long read = srcFile.transferTo(total, Math.min(Main.transferChunk, fileSize), sendTo);
 				total += read;
-				logger.log("Transferred %s (total : %s of %s) to %s" // TODO : debug level
+				logger.info("Transferred %s (total : %s of %s) to %s" // TODO : debug level
 						.formatted(Main.formatFileSize(read), Main.formatFileSize(total), Main.formatFileSize(fileSize), remoteAddr));
 
 				progress = (int) Math.round(100.0 * total / fileSize);
-				logger.log("Sent " + total + "byte (" + progress + "%) from " + curFile.getName() + " to " + remoteAddr);
+				logger.info("Sent " + total + "byte (" + progress + "%) from " + curFile.getName() + " to " + remoteAddr);
 				ClientListTableModel.getinstance().updated(this);
 			}
 
@@ -150,7 +150,7 @@ public class ClientConnection implements Runnable {
 			String errStr = "Cannot send file : " + curFile.getAbsolutePath() + " ("
 					+ (int) Math.round(100.0 * total / fileSize) + "%)\n";
 			if(isAborted) { 
-				logger.log("Thread interrupted while connecting with : " + getIP() + ":" + getPort() + ", and download aborted!\n" + errStr);
+				logger.info("Thread interrupted while connecting with : " + getIP() + ":" + getPort() + ", and download aborted!\n" + errStr);
 			}
 			SwingDialogs.error("Failed to send curFile!", errStr + "%e%", e, false);
 
@@ -158,7 +158,7 @@ public class ClientConnection implements Runnable {
 			return;
 
 		}
-		logger.log("Sent " +curFile.getName() + " successfully!");
+		logger.info("Sent " +curFile.getName() + " successfully!");
 		status = "Completed!";
 
 		return;
@@ -186,11 +186,11 @@ public class ClientConnection implements Runnable {
 		while (nameBuf.hasRemaining()) {
 			sendTo.write(nameBuf);
 		}
-		logger.log("Metadata sent. Listen for client response...");
+		logger.info("Metadata sent. Listen for client response...");
 		
 		if(!Main.readFromChannel(sendTo, clientResponse)) {
 			System.out.println("read response return false, clientResponseBuf position : " + clientResponse.position());
-			logger.log("Tried to read response from client, but client disconnected");
+			logger.info("Tried to read response from client, but client disconnected");
 			return 0;
 		}
 		

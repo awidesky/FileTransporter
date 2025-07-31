@@ -1,4 +1,4 @@
-package com.awidesky.gui;
+package io.github.awidesky.gui;
 
 import java.awt.Dimension;
 import java.awt.Insets;
@@ -11,10 +11,10 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
 
-import com.awidesky.Main;
-import com.awidesky.clientSide.ClientFrame;
-import com.awidesky.serverSide.ServerFrame;
-import com.awidesky.util.TaskLogger;
+import io.github.awidesky.Main;
+import io.github.awidesky.clientSide.ClientFrame;
+import io.github.awidesky.serverSide.ServerFrame;
+import io.github.awidesky.guiUtil.TaskLogger;
 
 public class InitFrame extends JFrame {
 
@@ -38,7 +38,7 @@ public class InitFrame extends JFrame {
 			public void windowClosing(WindowEvent e) {
 
 				e.getWindow().dispose();
-				logger.log("InitFrame was closed");
+				logger.info("InitFrame was closed");
 				Main.kill(1);
 
 			}

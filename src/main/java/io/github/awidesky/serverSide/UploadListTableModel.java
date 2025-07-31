@@ -1,4 +1,4 @@
-package com.awidesky.serverSide;
+package io.github.awidesky.serverSide;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -8,8 +8,8 @@ import java.util.List;
 import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
 
-import com.awidesky.Main;
-import com.awidesky.util.SwingDialogs;
+import io.github.awidesky.Main;
+import io.github.awidesky.guiUtil.SwingDialogs;
 
 public class UploadListTableModel extends AbstractTableModel {
 

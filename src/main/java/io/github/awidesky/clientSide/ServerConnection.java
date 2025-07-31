@@ -1,4 +1,4 @@
-package com.awidesky.clientSide;
+package io.github.awidesky.clientSide;
 
 import java.io.File;
 import java.io.IOException;
@@ -10,9 +10,9 @@ import java.nio.channels.SocketChannel;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.Future;
 
-import com.awidesky.Main;
-import com.awidesky.util.SwingDialogs;
-import com.awidesky.util.TaskLogger;
+import io.github.awidesky.Main;
+import io.github.awidesky.guiUtil.SwingDialogs;
+import io.github.awidesky.guiUtil.TaskLogger;
 
 public class ServerConnection implements Runnable{
 
@@ -24,6 +24,8 @@ public class ServerConnection implements Runnable{
 	private File destDir;
 	private File destFile;
 	
+	private int connectionNum;
+	
 	private String ip;//TODO : needed?
 	private int port;
 	private InetSocketAddress remoteAddress;
@@ -31,17 +33,15 @@ public class ServerConnection implements Runnable{
 	private ByteBuffer lenBuf = ByteBuffer.allocate(Main.lenBufSize);
 	private ByteBuffer nameBuf = ByteBuffer.allocate(128);
 	private ByteBuffer responseBuf = ByteBuffer.allocate(1);
-	private String taskInfo;
 	private Future<?> future;
 	/** called when process aborted/cancelled, so that the reset GUI to initial state */
 
-	public ServerConnection(String ip, int port, File destination, TaskLogger logger) { //TODO : just get a new logger from main..?
-		
+	public ServerConnection(int i, String ip, int port, File destination) {
+		this.connectionNum = i;
 		this.ip = ip; //ip & port that entered by user
 		this.port = port;
 		this.destDir = destination;
-		this.taskInfo = "Client connecting [" + ip + ":" + port + "] ";
-		this.logger = logger;
+		this.logger = Main.getLogger(this.toString());
 
 	}
 	
@@ -58,18 +58,17 @@ public class ServerConnection implements Runnable{
 
 	@Override
 	public void run() {
-
-		taskInfo = Thread.currentThread().getName() + " " + taskInfo;
+		logger.info("Running on " + Thread.currentThread());
 		String fileName = null;
 		boolean gotMetadata = false; // is metadata received?
 		boolean completed = false; // is connection completed without problem?
 		try (SocketChannel ch = SocketChannel.open()) {
 
-			logger.log(taskInfo + "Connecting to Server...");
+			logger.info("Connecting to Server...");
 			ch.connect(new InetSocketAddress(ip, port));
 			remoteAddress = (InetSocketAddress) ch.getRemoteAddress();
-			logger.log("Connected to : " + remoteAddress);
-			taskInfo = "Client connected to [" + remoteAddress + "] ";
+			logger.info("Connected to : " + remoteAddress);
+			logger.setPrefix(this.toString());
 
 			FileReciever.sendUUID(ch);
 			
@@ -91,13 +90,13 @@ public class ServerConnection implements Runnable{
 
 				lenBuf.flip().asLongBuffer().get(lenData);
 				if(lenData[0] == -1 && lenData[1] == -1) {
-					logger.log("File transfer finished! Closing connection...");
+					logger.info("File transfer finished! Closing connection...");
 					completed = true;
 					break;
 				}
 				
-				logger.log("New file metadate recieved!");
-				logger.log("File name length : " + lenData[0] + ", length of file : " + Main.formatFileSize(lenData[1]) + "(" + lenData[1] + "byte)");
+				logger.info("New file metadate recieved!");
+				logger.info("File name length : " + lenData[0] + ", length of file : " + Main.formatFileSize(lenData[1]) + "(" + lenData[1] + "byte)");
 
 				if(nameBuf.remaining() < lenData[0]) { //resize nameBuf if needed
 					int newSize = nameBuf.capacity();
@@ -113,20 +112,20 @@ public class ServerConnection implements Runnable{
 				}
 
 				fileName = Main.charset.decode(nameBuf.flip()).toString();
-				logger.log("File name : " + fileName);
+				logger.info("File name : " + fileName);
 				gotMetadata = true;
 
 				destFile = new File(destDir, fileName);
 				DonwloadingStatus dstat = new DonwloadingStatus(destFile.getAbsolutePath(), lenData[1], this);
 				DownloadingListTableModel.getinstance().addTask(dstat);
 				if(destFile != null) {
-					logger.log("Sending download request...");
+					logger.info("Sending download request...");
 					responseBuf.put((byte) 1).flip();
 					while (responseBuf.hasRemaining()) {
 						ch.write(responseBuf);
 					}
 
-					logger.log("Initiate downloading " + fileName);
+					logger.info("Initiate downloading " + fileName);
 					if(!download(ch, lenData[1], dstat)) { //download failed!
 						dstat.setStatus("ERROR!");
 						throw new IOException("Download aborted while downloading " + destFile.getAbsolutePath());
@@ -134,14 +133,14 @@ public class ServerConnection implements Runnable{
 					dstat.setStatus("Done!");
 				}
 
-				logger.log("Download Success!\n");
+				logger.info("Download Success!\n");
 			}
 		} catch (ClosedByInterruptException inter) {
-			if(isAborted) SwingDialogs.error(taskInfo + "Failed to receive files!", "Cannot receive file " + fileName + " from :" + remoteAddress + ", and download aborted!\n%e%", inter, true);
-			else SwingDialogs.error(taskInfo + "Failed to receive files!", "Thread interrupted while connecting with : " + remoteAddress + ", and download aborted!\n%e%", inter, true);
+			if(isAborted) SwingDialogs.error(this.toString() + "Failed to receive files!", "Cannot receive file " + fileName + " from :" + remoteAddress + ", and download aborted!\n%e%", inter, true);
+			else SwingDialogs.error(this.toString() + "Failed to receive files!", "Thread interrupted while connecting with : " + remoteAddress + ", and download aborted!\n%e%", inter, true);
 		} catch (Exception e) {
-			if(!gotMetadata) SwingDialogs.error(taskInfo + "Failed to receive metadata!", "Cannot receive metadata from :" + remoteAddress + "\n%e%", e, true); 
-			else SwingDialogs.error(taskInfo + "Failed to receive files!", "Cannot receive file from : " + remoteAddress + "\n%e%", e, true);
+			if(!gotMetadata) SwingDialogs.error(this.toString() + "Failed to receive metadata!", "Cannot receive metadata from :" + remoteAddress + "\n%e%", e, true); 
+			else SwingDialogs.error(this.toString() + "Failed to receive files!", "Cannot receive file from : " + remoteAddress + "\n%e%", e, true);
 		} finally {
 			SwingDialogs.information("Connection has closed", "Connection to :" + remoteAddress + " has closed " + (completed ? "successfully!" : "with error(s)!"), true);
 		}
@@ -166,23 +165,31 @@ public class ServerConnection implements Runnable{
 		
 		try (FileChannel dest = FileChannel.open(destFile.toPath(), StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
 			while (total < fileSize) {
-				logger.log("Try transfer from " + remoteAddress + " to " + destFile.getName()); // TODO : debug level, relativize
+				logger.info("Try transfer from " + remoteAddress + " to " + destFile.getName()); // TODO : debug level, relativize
 
 				long read = dest.transferFrom(ch, total, Math.min(Main.transferChunk, fileSize - total));
 				total += read;
-				logger.log("Transferred %s (total : %s of %s) to %s" // TODO : debug level
+				logger.info("Transferred %s (total : %s of %s) to %s" // TODO : debug level
 						.formatted(Main.formatFileSize(read), Main.formatFileSize(total), Main.formatFileSize(fileSize), remoteAddress));
 
 				dstat.setProgress((int) Math.round(100.0 * total / fileSize));
-				logger.log("Downloaded " + total + "byte (" + dstat.getProgress() + "%) from " + remoteAddress + " to " + destFile.getName());
+				logger.info("Downloaded " + total + "byte (" + dstat.getProgress() + "%) from " + remoteAddress + " to " + destFile.getName());
 				DownloadingListTableModel.getinstance().updated(dstat);
 			}
 		} catch (IOException e) {
-			SwingDialogs.error(taskInfo + "Failed to recieve file!", "Cannot recieve file : " + destFile.getAbsolutePath() + destFile.getName() + "\n%e%", e, true);
+			SwingDialogs.error(this.toString() + "Failed to recieve file!", "Cannot recieve file : " + destFile.getAbsolutePath() + destFile.getName() + "\n%e%", e, true);
 			return false;
 		}
 		
 		return true;
 	}
+
+	@Override
+	public String toString() {
+		return "[Connection #" + connectionNum + ", remote=" + (remoteAddress != null ? remoteAddress : new InetSocketAddress(ip, port)) + "] ";
+	}
+	
+	
+	
 
 }

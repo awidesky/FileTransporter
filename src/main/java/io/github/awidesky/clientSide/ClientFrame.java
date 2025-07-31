@@ -1,4 +1,4 @@
-package com.awidesky.clientSide;
+package io.github.awidesky.clientSide;
 
 import java.awt.Dimension;
 import java.awt.Insets;
@@ -18,10 +18,10 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
-import com.awidesky.Main;
-import com.awidesky.gui.ProgressRenderer;
-import com.awidesky.util.SwingDialogs;
-import com.awidesky.util.TaskLogger;
+import io.github.awidesky.Main;
+import io.github.awidesky.gui.ProgressRenderer;
+import io.github.awidesky.guiUtil.SwingDialogs;
+import io.github.awidesky.guiUtil.TaskLogger;
 
 public class ClientFrame extends JFrame {
 
@@ -62,7 +62,7 @@ public class ClientFrame extends JFrame {
 	private JFileChooser chooser = new JFileChooser((String)null);
 	private static final JDialog dialog = new JDialog();
 	
-	private final TaskLogger logger = Main.getLogger("[Client]");
+	private final TaskLogger logger = Main.getLogger("[ClientFrame]");
 	
 	public ClientFrame() {
 		
@@ -76,7 +76,7 @@ public class ClientFrame extends JFrame {
 				
 				if(!DownloadingListTableModel.getinstance().clearAll()) return;
 				e.getWindow().dispose();
-				logger.log("ClientFrame was closed");
+				logger.info("ClientFrame was closed");
 				Main.kill(0);
 
 			}
@@ -138,7 +138,7 @@ public class ClientFrame extends JFrame {
 			
 			connect.setEnabled(false);
 			
-			Main.queueJob(() -> FileReciever.startConnections(c, ip_t.getText(), i, destination, this::guiResetCallback, logger));
+			Main.queueJob(() -> FileReciever.startConnections(c, ip_t.getText(), i, destination, this::guiResetCallback));
 		});
 		cleanCompleted.addActionListener((e) -> {
 			DownloadingListTableModel.getinstance().clearDone();

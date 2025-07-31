@@ -1,4 +1,4 @@
-package com.awidesky.clientSide;
+package io.github.awidesky.serverSide;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -7,40 +7,38 @@ import java.util.List;
 import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
 
-import com.awidesky.util.SwingDialogs;
+import io.github.awidesky.guiUtil.SwingDialogs;
+
+public class ClientListTableModel extends AbstractTableModel {
 
 
-public class DownloadingListTableModel extends AbstractTableModel {
-
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = -1301962023940227000L;
+	private static final long serialVersionUID = 3855477049816688267L;
+	private final static ClientListTableModel instance = new ClientListTableModel();
+	private List<ClientConnection> rows = new ArrayList<>(); 
 	
-	private static DownloadingListTableModel instance = new DownloadingListTableModel();
-	private List<DonwloadingStatus> rows = new ArrayList<>();
-	
-	private DownloadingListTableModel() {}
+	private ClientListTableModel() {}
 
 	@Override
 	public int getRowCount() {
 		return rows.size();
 	}
-
+	
 	@Override
 	public int getColumnCount() {
-		return 2;
+		return 3;
 	}
 
 	@Override
 	public String getColumnName(int columnIndex) {
 		
 		if(columnIndex == 0)
-			return "Destination";
+			return "Client";
 		else if(columnIndex == 1)
+			return "Now sending...";
+		else if (columnIndex == 2) {
 			return "Progress";
-		else {
-			SwingDialogs.error("Invalid column index!", "Invalid column index in DownloadingListTableModel : " + columnIndex, null, false);
+		} else {
+			SwingDialogs.error("Invalid column index!", "Invalid column index in UploadListTableModel : " + columnIndex, null, false);
 			return "null"; // this should not happen!
 		}
 		
@@ -48,12 +46,14 @@ public class DownloadingListTableModel extends AbstractTableModel {
 
 
 	@Override
-	public Object getValueAt(int rowIndex, int columnIndex) {
+	public Object getValueAt(int rowIndex, int columnIndex) { 
 		
 		switch (columnIndex) {
-		case 0: // destination
-			return rows.get(rowIndex).getDest();
-		case 1: // Progress
+		case 0: // Client
+			return rows.get(rowIndex).getIP();
+		case 1: // Now sending...
+			return rows.get(rowIndex).getNowSendingFile(); //TODO: was getNowSendingFileString
+		case 2: // Progress
 			return rows.get(rowIndex).getProgress();
 		}
 		
@@ -64,21 +64,14 @@ public class DownloadingListTableModel extends AbstractTableModel {
 
 
 	public void clearDone() {
-		if(!SwingUtilities.isEventDispatchThread()) {
-			SwingUtilities.invokeLater(this::clearDone);
-			return;
-		}
-		
-		rows.removeIf(DonwloadingStatus::isFinished);
+
+		rows.removeIf((r) -> r.isFinished());
 		fireTableDataChanged();
+
 	}
 	
 	public void disconectSelected(int[] selected) {
-		if(!SwingUtilities.isEventDispatchThread()) {
-			SwingUtilities.invokeLater(() -> disconectSelected(selected));
-			return;
-		}
-		
+
 		for (int r : selected) {
 			if (rows.get(r).isFinished()) { 
 				continue;
@@ -89,7 +82,7 @@ public class DownloadingListTableModel extends AbstractTableModel {
 			}
 		}
 		
-		LinkedList<DonwloadingStatus> temp = new LinkedList<>();
+		LinkedList<ClientConnection> temp = new LinkedList<>();
 		for (int r : selected) temp.add(rows.get(r));
 		rows.removeAll(temp);
 		
@@ -102,17 +95,18 @@ public class DownloadingListTableModel extends AbstractTableModel {
 	 * @return if user agreed to disconnect or all work queued were done.
 	 * */
 	public boolean clearAll() {
+
 		if(rows.isEmpty()) return true;
 		
-		rows.removeIf(DonwloadingStatus::isFinished);
-
+		rows.removeIf(ClientConnection::isFinished);
+		
 		if (!rows.isEmpty()) {
 			if (!SwingDialogs.confirm("Before clearing!",
 					"Some task(s) are not done!\nDisconnect all connection(s) and clear list?"))
 				return false;
 
-			rows.forEach((r) -> {
-				r.getFileReceiver().disconnect(); //TODO : threading?
+			rows.forEach((s) -> {
+				s.disconnect();
 			});
 		}
 		
@@ -122,25 +116,27 @@ public class DownloadingListTableModel extends AbstractTableModel {
 
 	}
 
-	public void addTask(DonwloadingStatus r) {
+	public void addConnection(ClientConnection r) {
+
 		SwingUtilities.invokeLater(() -> {
 			rows.add(r);
 			fireTableRowsInserted(rows.size() - 1, rows.size() - 1);
 		});
+
 	}
 
+	public void updated(ClientConnection r) {
 
-	public List<DonwloadingStatus> getData() {
+		SwingUtilities.invokeLater(() -> { fireTableRowsUpdated(rows.indexOf(r), rows.indexOf(r)); });
+
+	}
+	
+	public List<ClientConnection> getData() {
 		return rows;
 	}
-
-	public void updated(DonwloadingStatus r) {
-		SwingUtilities.invokeLater(() -> { fireTableRowsUpdated(rows.indexOf(r), rows.indexOf(r)); });
-	}
-	public static DownloadingListTableModel getinstance() {
-
-		return instance ;
-		
-	}
+	
+	public static ClientListTableModel getinstance() {
+		return instance;
+	}	
 
 }

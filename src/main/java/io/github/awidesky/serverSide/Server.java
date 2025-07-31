@@ -1,4 +1,4 @@
-package com.awidesky.serverSide;
+package io.github.awidesky.serverSide;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -14,9 +14,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
-import com.awidesky.Main;
-import com.awidesky.util.SwingDialogs;
-import com.awidesky.util.TaskLogger;
+import io.github.awidesky.Main;
+import io.github.awidesky.guiUtil.SwingDialogs;
+import io.github.awidesky.guiUtil.TaskLogger;
 
 public class Server implements Runnable {
 
@@ -69,7 +69,7 @@ public class Server implements Runnable {
 			SwingDialogs.information("Server opened!", "Server is wating connection from " + getselfIP() + ":" + port, false);
 			
 			while (!Main.isAppStopped() && !future.isCancelled()) {
-				logger.log("Server|Ready for connection...");
+				logger.info("Server|Ready for connection...");
 				
 				ClientConnection sc = connectClient(server.accept());
 				if(sc == null) continue;
@@ -78,7 +78,7 @@ public class Server implements Runnable {
 				sc.setFuture(Main.queueJob(sc));
 			}
 
-			logger.log("Server stopped. closing server...");
+			logger.info("Server stopped. closing server...");
 
 		} catch (Exception e) {
 			if(aborted)	SwingDialogs.information("Server is stopped!", "Server is stopped by user, or server thread was interrupted!\nException message : " + e.getMessage(), true);
@@ -103,8 +103,8 @@ public class Server implements Runnable {
 			InetSocketAddress remotAddress = (InetSocketAddress)accepted.getRemoteAddress();
 			ByteBuffer buf = ByteBuffer.allocate(16);
 
-			logger.log("Accepted Conection : " + remotAddress);
-			logger.log("Recieving UUID...");
+			logger.info("Accepted Conection : " + remotAddress);
+			logger.info("Recieving UUID...");
 			while(buf.hasRemaining()) accepted.read(buf);
 			long[] bits = new long[2];
 			buf.flip().asLongBuffer().get(bits);
@@ -115,7 +115,7 @@ public class Server implements Runnable {
 						.filter(u -> !clients.keySet().contains(u))
 						.filter(u -> u.getMostSignificantBits() != 0 || u.getLeastSignificantBits() != 0)
 						.findFirst().get();
-				logger.log("Empty UUID, send a new one : " + uu);
+				logger.info("Empty UUID, send a new one : " + uu);
 
 				SwingDialogs.information("Connected to a Client!", "Connection from " + remotAddress + ", UUID : " + uu, false); //TODO : confirm?
 				
@@ -123,12 +123,12 @@ public class Server implements Runnable {
 				while(buf.hasRemaining()) accepted.write(buf);
 				
 				clients.put(uu, new ConnectedClient(uu, files));
-				logger.log("UUID sent. close connection..."); //TODO : additional metadata like maximum connections?
+				logger.info("UUID sent. close connection..."); //TODO : additional metadata like maximum connections?
 				accepted.close();
 				return null;
 			} else {
 				uu = new UUID(bits[0], bits[1]);
-				logger.log("Recieved client UUID : " + uu + ", exist : " + clients.contains(uu)); //TODO : if false, NullPointerException...
+				logger.info("Recieved client UUID : " + uu + ", exist : " + clients.contains(uu)); //TODO : if false, NullPointerException...
 			}
 
 			ConnectedClient client = clients.computeIfAbsent(uu, u -> new ConnectedClient(u, files));

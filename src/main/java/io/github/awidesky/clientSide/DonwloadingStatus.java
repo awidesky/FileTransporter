@@ -1,6 +1,6 @@
-package com.awidesky.clientSide;
+package io.github.awidesky.clientSide;
 
-import com.awidesky.Main;
+import io.github.awidesky.Main;
 
 public class DonwloadingStatus {
 

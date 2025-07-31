@@ -1,4 +1,4 @@
-package com.awidesky.serverSide;
+package io.github.awidesky.serverSide;
 
 import java.awt.Dimension;
 import java.awt.Insets;
@@ -22,11 +22,11 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.filechooser.FileFilter;
 
-import com.awidesky.Main;
-import com.awidesky.gui.ImageViewer;
-import com.awidesky.gui.ProgressRenderer;
-import com.awidesky.util.SwingDialogs;
-import com.awidesky.util.TaskLogger;
+import io.github.awidesky.Main;
+import io.github.awidesky.gui.ImageViewer;
+import io.github.awidesky.gui.ProgressRenderer;
+import io.github.awidesky.guiUtil.SwingDialogs;
+import io.github.awidesky.guiUtil.TaskLogger;
 
 public class ServerFrame extends JFrame {
 
@@ -100,7 +100,7 @@ public class ServerFrame extends JFrame {
 				if(!ClientListTableModel.getinstance().clearAll()) return;
 				stopServer();
 				e.getWindow().dispose();
-				logger.log("ServerFrame was closed");
+				logger.info("ServerFrame was closed");
 				Main.kill(0);
 
 			}
