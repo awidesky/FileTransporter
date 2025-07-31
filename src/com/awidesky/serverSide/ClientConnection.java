@@ -80,6 +80,7 @@ public class ClientConnection implements Runnable {
 	 * */
 	public void run() {
 		while((curFile = fileQueue.poll()) != null) {
+			ClientListTableModel.getinstance().updated(this);
 			send();
 		}
 		
@@ -146,7 +147,7 @@ public class ClientConnection implements Runnable {
 
 		} catch (Exception e) {
 
-			String errStr = "Cannot send curFile : " + curFile.getAbsolutePath() + " ("
+			String errStr = "Cannot send file : " + curFile.getAbsolutePath() + " ("
 					+ (int) Math.round(100.0 * total / fileSize) + "%)\n";
 			if(isAborted) { 
 				logger.log("Thread interrupted while connecting with : " + getIP() + ":" + getPort() + ", and download aborted!\n" + errStr);

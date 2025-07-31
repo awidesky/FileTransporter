@@ -69,15 +69,12 @@ public class Server implements Runnable {
 			SwingDialogs.information("Server opened!", "Server is wating connection from " + getselfIP() + ":" + port, false);
 			
 			while (!Main.isAppStopped() && !future.isCancelled()) {
-
 				logger.log("Server|Ready for connection...");
 				
 				ClientConnection sc = connectClient(server.accept());
-				if(sc== null) continue;
-				
+				if(sc == null) continue;
 				
 				ClientListTableModel.getinstance().addConnection(sc); //TODO : use tabbedpane per client
-				
 				sc.setFuture(Main.queueJob(sc));
 			}
 
@@ -105,9 +102,8 @@ public class Server implements Runnable {
 		try {
 			InetSocketAddress remotAddress = (InetSocketAddress)accepted.getRemoteAddress();
 			ByteBuffer buf = ByteBuffer.allocate(16);
-			
-			SwingDialogs.information("Connected to a Client!", "Connection from " + remotAddress, true);
 
+			logger.log("Accepted Conection : " + remotAddress);
 			logger.log("Recieving UUID...");
 			while(buf.hasRemaining()) accepted.read(buf);
 			long[] bits = new long[2];
@@ -120,15 +116,20 @@ public class Server implements Runnable {
 						.filter(u -> u.getMostSignificantBits() != 0 || u.getLeastSignificantBits() != 0)
 						.findFirst().get();
 				logger.log("Empty UUID, send a new one : " + uu);
+
+				SwingDialogs.information("Connected to a Client!", "Connection from " + remotAddress + ", UUID : " + uu, false); //TODO : confirm?
 				
 				buf.clear().asLongBuffer().put(uu.getMostSignificantBits()).put(uu.getLeastSignificantBits()).flip();
 				while(buf.hasRemaining()) accepted.write(buf);
-				logger.log("UUID sent");
+				
+				clients.put(uu, new ConnectedClient(uu, files));
+				logger.log("UUID sent. close connection..."); //TODO : additional metadata like maximum connections?
+				accepted.close();
+				return null;
 			} else {
 				uu = new UUID(bits[0], bits[1]);
-				logger.log("Existing UUID : " + uu + ", exist : " + clients.contains(uu)); //TODO : if false??
+				logger.log("Recieved client UUID : " + uu + ", exist : " + clients.contains(uu)); //TODO : if false, NullPointerException...
 			}
-			
 
 			ConnectedClient client = clients.computeIfAbsent(uu, u -> new ConnectedClient(u, files));
 			return client.addChannel(accepted, remotAddress);

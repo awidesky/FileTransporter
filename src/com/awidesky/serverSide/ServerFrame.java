@@ -78,8 +78,11 @@ public class ServerFrame extends JFrame {
 			int row = rowAtPoint(e.getPoint());
 			int column = columnAtPoint(e.getPoint());
 			if (row == -1) return "";
-			if (column == 2) return Main.formatFileSize(ClientListTableModel.getinstance().getData().get(row).getNowSendingFile().length());
-			else return ClientListTableModel.getinstance().getData().get(row).getProgressString();
+			if (column == 2) {
+				File f = ClientListTableModel.getinstance().getData().get(row).getNowSendingFile();
+				if(f == null) return "-1";
+				else return Main.formatFileSize(f.length());
+			} else return ClientListTableModel.getinstance().getData().get(row).getProgressString();
 		}
 		
 	};

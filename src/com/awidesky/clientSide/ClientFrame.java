@@ -6,8 +6,11 @@ import java.awt.Toolkit;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.File;
 
 import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JScrollPane;
@@ -25,9 +28,11 @@ public class ClientFrame extends JFrame {
 	
 	private JLabel ip = new JLabel("IP :");
 	private JLabel port = new JLabel("Port :");
+	private JLabel connections = new JLabel("Connections :");
 	
 	private JTextField ip_t = new JTextField("localhost");
 	private JTextField port_t = new JTextField();
+	private JTextField connections_t = new JTextField("1");
 	
 	private JButton connect = new JButton("Connect");
 	private JButton cleanCompleted = new JButton("clean completed");
@@ -48,11 +53,14 @@ public class ClientFrame extends JFrame {
 			if (column == 0) {
 				return d.getDest();
 			} else {
-				return d.getProgressString() + ", Connected to " + FileReceiver.getInstance().connectedTo(); //TODO : \n here?
+				return d.getProgressString() + ", Connected to " + d.getFileReceiver().getRemoteAddress(); //TODO : \n here?
 			}
 		}
 		
 	};
+	
+	private JFileChooser chooser = new JFileChooser((String)null);
+	private static final JDialog dialog = new JDialog();
 	
 	private final TaskLogger logger = Main.getLogger("[Client]");
 	
@@ -74,18 +82,20 @@ public class ClientFrame extends JFrame {
 			}
 
 		});
-		setSize(350, 270); //add more height than fxml because it does not think about title length
+		setSize(450, 270); //add more height than fxml because it does not think about title length
 		Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
 		setLocation(dim.width/2-getSize().width/2, dim.height/2-getSize().height/2);
 		setLayout(null);
 		setResizable(false);
 
 		
-		ip.setBounds(14, 14, ip.getPreferredSize().width, ip.getPreferredSize().height);
+		ip.setBounds(14, 14, ip.getPreferredSize().width, ip.getPreferredSize().height); //TODO : layout
 		port.setBounds(180, 14, port.getPreferredSize().width, port.getPreferredSize().height);
+		connections.setBounds(345, 14, connections.getPreferredSize().width, connections.getPreferredSize().height);
 		
 		ip_t.setBounds(35, 10, 120, 22);
 		port_t.setBounds(220, 10, 97, 22);
+		connections_t.setBounds(420, 10, 30, 22);
 
 		connect.setBounds(136, 47, 65, 22);
 		connect.setMargin(new Insets(0, 0, 0, 0));
@@ -104,13 +114,22 @@ public class ClientFrame extends JFrame {
 		    	return;
 			}
 			
-			int i;
+			int i, c;
 			try {
 		        i = Integer.parseInt(port_t.getText());
 		    } catch (NumberFormatException nfe) {
 		    	SwingDialogs.error("invalid port number!", "Invalid port number!\n%e%", nfe, true);
 		    	return;
 		    }
+			try {
+				c = Integer.parseInt(connections_t.getText());
+			} catch (NumberFormatException nfe) {
+				SwingDialogs.error("invalid connections number!", "Invalid connections number!\n%e%", nfe, true);
+				return;
+			}
+			
+			File destination = chooseSaveDest();
+			if(destination == null) return;
 			
 			ip.setEnabled(false);
 			port.setEnabled(false);
@@ -119,9 +138,7 @@ public class ClientFrame extends JFrame {
 			
 			connect.setEnabled(false);
 			
-			FileReceiver fr = FileReceiver.getInstance(ip_t.getText(), i, this::guiResetCallback, logger);
-			fr.setFuture(Main.queueJob(fr));
-			
+			Main.queueJob(() -> FileReciever.startConnections(c, ip_t.getText(), i, destination, this::guiResetCallback, logger));
 		});
 		cleanCompleted.addActionListener((e) -> {
 			DownloadingListTableModel.getinstance().clearDone();
@@ -142,10 +159,17 @@ public class ClientFrame extends JFrame {
 		JScrollPane scrollPane = new JScrollPane(table, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 		scrollPane.setBounds(13, 82, 305, 117);
 
+
+		dialog.setAlwaysOnTop(true);
+		chooser.setMultiSelectionEnabled(false);
+		chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+		
 		add(ip);
 		add(port);
+		add(connections);
 		add(ip_t);
 		add(port_t);
+		add(connections_t);
 		add(connect);
 		add(cleanCompleted);
 		add(disconnectSelected);
@@ -167,5 +191,26 @@ public class ClientFrame extends JFrame {
 			DownloadingListTableModel.getinstance().clearAll();
 		});
 	}
+	
+	/**
+	 * 
+	 * This method calls <code>SwingUtilities#invokeAndWait</code>. <br>
+	 * So never call this method in EDT! <br>
+	 * If there's already same file exist in chosen path, ask to overwrite it or not.
+	 * 
+	 * @return <code>File</code> object that represents the destination file. created before returning.
+	 * 
+	 * */
+	private File chooseSaveDest() {
+		chooser.setDialogTitle("Choose a directory to download");
+		if(chooser.showOpenDialog(dialog) != JFileChooser.APPROVE_OPTION) return null;
+		
+		File dest = chooser.getSelectedFile();
+		chooser.setCurrentDirectory(dest);
+		if(!dest.exists()) dest.mkdirs();
+
+		return dest;
+	}
+
 
 }

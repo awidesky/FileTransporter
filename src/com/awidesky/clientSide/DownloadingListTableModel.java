@@ -112,7 +112,7 @@ public class DownloadingListTableModel extends AbstractTableModel {
 				return false;
 
 			rows.forEach((r) -> {
-				FileReceiver.getInstance().disconnect(); //TODO : threading?
+				r.getFileReceiver().disconnect(); //TODO : threading?
 			});
 		}
 		
