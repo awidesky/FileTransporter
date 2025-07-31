@@ -109,6 +109,7 @@ public class Main {
 			logThread.setLogDestination(System.out, true);
 			SwingDialogs.error("Error when creating log flie", "%e%", e, true);
 		} finally {
+			logThread.setDatePrefixAllChildren(new SimpleDateFormat("[yyyy-MM-dd kk:mm:ss.SSS]"));
 			Main.mainLogger = logThread.getLogger();
 			SwingDialogs.setLogger(logThread.getLogger());
 			logThread.start();
