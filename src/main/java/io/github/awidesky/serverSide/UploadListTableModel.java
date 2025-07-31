@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
 
 import io.github.awidesky.Main;
@@ -73,22 +72,9 @@ public class UploadListTableModel extends AbstractTableModel {
 			
 	}
 
-
-	public void addFile(File f) {
-
-		SwingUtilities.invokeLater(() -> {
-			rows.add(f);
-			fireTableRowsInserted(rows.size() - 1, rows.size() - 1);
-		});
-
-	}
 	public void addFiles(List<File> temp) {
-
 		rows.addAll(temp);
-		SwingUtilities.invokeLater(() -> {
-			fireTableRowsInserted(rows.size() - 1, rows.size() - 1);
-		});
-		
+		fireTableDataChanged();
 	}
 
 	public List<File> getData() {

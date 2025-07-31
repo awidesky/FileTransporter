@@ -74,7 +74,7 @@ public class ServerFrame extends JFrame {
 		private static final long serialVersionUID = 8873559199947424949L;
 
 		@Override
-		public String getToolTipText(MouseEvent e) { 
+		public String getToolTipText(MouseEvent e) {
 			int row = rowAtPoint(e.getPoint());
 			int column = columnAtPoint(e.getPoint());
 			if (row == -1) return "";
@@ -214,7 +214,6 @@ public class ServerFrame extends JFrame {
 			
 		});
 		addFile.addActionListener((e) -> {
-			
 			if (chooser.showOpenDialog(dialog) != JFileChooser.APPROVE_OPTION) return;
 			List<File> temp = Arrays.asList(chooser.getSelectedFiles());
 			chooser.setCurrentDirectory(temp.get(0).getAbsoluteFile().getParentFile());
