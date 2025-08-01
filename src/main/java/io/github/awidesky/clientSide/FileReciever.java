@@ -1,5 +1,6 @@
 package io.github.awidesky.clientSide;
 
+import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -34,9 +35,9 @@ public class FileReciever {
 		try (SocketChannel ch = SocketChannel.open()) {
 			logger.info("Connecting to : " + addr.toString());
 			ch.connect(addr);
-			InetSocketAddress remoteAddress = (InetSocketAddress) ch.getRemoteAddress();
-			logger.info("Connected to : " + remoteAddress);
-			SwingDialogs.information("Connected to the Server!", "Connected to " + remoteAddress.getHostString() + ":" + remoteAddress.getPort(), true);
+			addr = (InetSocketAddress) ch.getRemoteAddress();
+			logger.info("Connected to : " + addr);
+			SwingDialogs.information("Connected to the Server!", "Connected to " + addr.getHostString() + ":" + addr.getPort(), true);
 			
 			sendUUID(ch);
 			
@@ -55,6 +56,7 @@ public class FileReciever {
 			fr.setFuture(f);
 		}
 		
+		final InetSocketAddress add = addr;
 		Main.queueJob(() -> {
 			for(Future<?> f : futures) {
 				try {
@@ -63,6 +65,13 @@ public class FileReciever {
 				} catch (InterruptedException | ExecutionException e) {
 					logger.info(e);
 				}
+			}
+			SwingDialogs.information("Transfer completed!", "Transfer with " + add + " completed!", false);
+			try {
+				Desktop.getDesktop().open(destDir);
+			} catch (IOException e) {
+				logger.error("Failed to open directory : " + destDir.getAbsolutePath());
+				logger.error(e);
 			}
 			resetCallback.run();
 		});
