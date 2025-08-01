@@ -323,7 +323,7 @@ public class ServerFrame extends JFrame {
 				else if (column == 1) {
 					File f = model.getData().get(row).getFile();
 					if(f == null) return "-1";
-					else return Main.formatFileSize(f.length());
+					else return f.getAbsolutePath();
 				} else return model.getData().get(row).getProgressString();
 			}
 		};

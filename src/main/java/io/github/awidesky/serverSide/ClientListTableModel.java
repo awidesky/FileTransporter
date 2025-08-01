@@ -104,7 +104,7 @@ public class ClientListTableModel extends AbstractTableModel {
 		case 0: // Status
 			return rows.get(rowIndex).getStatus();
 		case 1: // File
-			return rows.get(rowIndex).getFile();
+			return rows.get(rowIndex).getFile().getName();
 		case 2: // Progress
 			return rows.get(rowIndex).getProgress(); //TODO: was getNowSendingFileString
 		}

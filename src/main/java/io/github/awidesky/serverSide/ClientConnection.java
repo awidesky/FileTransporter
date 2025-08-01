@@ -126,7 +126,7 @@ public class ClientConnection implements Runnable {
 		try (FileChannel srcFile = FileChannel.open(curFile.toPath(), StandardOpenOption.READ)) {
 
 			while (total < fileSize) {
-				logger.info("Try transfer to " + remoteAddr); // TODO : debug level
+				logger.debug("Try transfer to " + remoteAddr);
 
 				long read = srcFile.transferTo(total, Math.min(Main.transferChunk, fileSize), sendTo);
 				total += read;
@@ -134,7 +134,7 @@ public class ClientConnection implements Runnable {
 						.formatted(Main.formatFileSize(read), Main.formatFileSize(total), Main.formatFileSize(fileSize), remoteAddr));
 
 				fileProgress.setProgress((int) Math.round(100.0 * total / fileSize));
-				fileProgress.setProgressString(fileProgress.getProgress() + "% (" + Main.formatFileSize(total) + " / " +  Main.formatFileSize(fileSize) + ")");
+				fileProgress.setProgressString(fileProgress.getProgress() + "% (" + Main.formatFileSize(total) + " / " +  Main.formatFileSize(fileSize) + "), Connection : " + getAddress());
 				logger.info("Sent " + total + "byte (" + fileProgress.getProgress() + "%) from " + curFile.getName() + " to " + remoteAddr);
 			}
 
