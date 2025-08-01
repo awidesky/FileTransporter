@@ -18,6 +18,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JScrollPane;
+import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.filechooser.FileFilter;
@@ -35,7 +36,7 @@ public class ServerFrame extends JFrame {
 	private Server server = null;
 	private boolean isStarted = false;
 	
-	private TaskLogger logger = Main.getLogger("[Server]");
+	private TaskLogger logger = Main.getLogger("[Server] ");
 	
 	private JFileChooser chooser = new JFileChooser();;
 	private JDialog dialog = new JDialog();;
@@ -65,27 +66,13 @@ public class ServerFrame extends JFrame {
 			int column = columnAtPoint(e.getPoint());
 			if (row == -1) return "";
 			if (column == 0) return UploadListTableModel.getinstance().getData().get(row).getAbsolutePath();
-			else return Main.formatFileSize(UploadListTableModel.getinstance().getData().get(row).length());
+			else return UploadListTableModel.getinstance().getData().get(row).length() + "bytes";
 		}
 		
 	};
-	private JTable clientListTable = new JTable() {
-		
-		private static final long serialVersionUID = 8873559199947424949L;
 
-		@Override
-		public String getToolTipText(MouseEvent e) {
-			int row = rowAtPoint(e.getPoint());
-			int column = columnAtPoint(e.getPoint());
-			if (row == -1) return "";
-			if (column == 2) {
-				File f = ClientListTableModel.getinstance().getData().get(row).getNowSendingFile();
-				if(f == null) return "-1";
-				else return Main.formatFileSize(f.length());
-			} else return ClientListTableModel.getinstance().getData().get(row).getProgressString();
-		}
-		
-	};
+	
+	JTabbedPane clientTab = new JTabbedPane();
 	
 	public ServerFrame() {
 
@@ -93,18 +80,13 @@ public class ServerFrame extends JFrame {
 		setIconImage(Main.icon);
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		addWindowListener(new WindowAdapter() {
-
 			@Override
 			public void windowClosing(WindowEvent e) {
-				
-				if(!ClientListTableModel.getinstance().clearAll()) return;
-				stopServer();
+				if(!stopServer()) return;
 				e.getWindow().dispose();
 				logger.info("ServerFrame was closed");
 				Main.kill(0);
-
 			}
-
 		});
 		setSize(350, 450); //add more height than fxml because it does not think about title length
 		Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
@@ -198,20 +180,30 @@ public class ServerFrame extends JFrame {
 			
 		});
 		cleanCompleted.addActionListener((e) -> {
-			
-			ClientListTableModel.getinstance().clearDone();
-			
+			for (int i = 0; i < clientTab.getTabCount(); i++) {
+				ClientListTableModel model = (ClientListTableModel)((JTable)clientTab.getTabComponentAt(i)).getModel();
+				if(model.getClient().isCompleted())
+					clientTab.removeTabAt(i);
+			}
 		});
 		disconnectAll.addActionListener((e) -> {
-			
-			ClientListTableModel.getinstance().clearAll();
-			
+			for (int i = 0; i < clientTab.getTabCount(); i++) {
+				ClientListTableModel model = (ClientListTableModel)((JTable)clientTab.getTabComponentAt(i)).getModel();
+				if(model.getClient().disconnect())
+					clientTab.removeTabAt(i);
+			}
+		});
+		disconnectSelected.addActionListener((e) -> {
+			int i = clientTab.getSelectedIndex();
+			System.out.println("clientTab.getTabCount : " + clientTab.getTabCount()); //TODO
+			System.out.println("Selected index : " + i); //TODO
+			ClientListTableModel model = (ClientListTableModel)((JTable)clientTab.getTabComponentAt(i)).getModel();
+			if(model.getClient().disconnect())
+				clientTab.removeTabAt(i);
 		});
 		deleteSelectedFile.addActionListener((e) -> {
-			
 			UploadListTableModel.getinstance().deleteSelected(fileListTable.getSelectedRows());
 			total.setText("Total : " + Main.formatFileSize(UploadListTableModel.getinstance().getFileSizeTotal()));
-			
 		});
 		addFile.addActionListener((e) -> {
 			if (chooser.showOpenDialog(dialog) != JFileChooser.APPROVE_OPTION) return;
@@ -220,11 +212,7 @@ public class ServerFrame extends JFrame {
 			UploadListTableModel.getinstance().addFiles(temp);
 			total.setText("Total : " + Main.formatFileSize(UploadListTableModel.getinstance().getFileSizeTotal()));
 		});
-		disconnectSelected.addActionListener((e) -> {
-			
-			ClientListTableModel.getinstance().disconectSelected(clientListTable.getSelectedRows());
-			
-		});
+
 		
 		fileListTable.setModel(UploadListTableModel.getinstance());
 		fileListTable.setAutoCreateColumnsFromModel(false);
@@ -234,16 +222,9 @@ public class ServerFrame extends JFrame {
 		JScrollPane scrollPane = new JScrollPane(fileListTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 		scrollPane.setBounds(13, 45, 305, 117);
 		
-		clientListTable.setModel(ClientListTableModel.getinstance());
-		clientListTable.setAutoCreateColumnsFromModel(false);
-		clientListTable.getColumn("Progress").setCellRenderer(new ProgressRenderer());
-		clientListTable.setFillsViewportHeight(true);
-		clientListTable.getColumnModel().getColumn(0).setPreferredWidth(92);
-		clientListTable.getColumnModel().getColumn(1).setPreferredWidth(131);
-		clientListTable.getColumnModel().getColumn(2).setPreferredWidth(80);
-		JScrollPane scrollPane1 = new JScrollPane(clientListTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+		
+		JScrollPane scrollPane1 = new JScrollPane(clientTab, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 		scrollPane1.setBounds(16, 231, 305, 127);
-		clientListTable.setEnabled(false);
 		
 		
 		add(ip);
@@ -294,31 +275,24 @@ public class ServerFrame extends JFrame {
 		addFile.setEnabled(false);
 		deleteSelectedFile.setEnabled(false);
 		
-		clientListTable.setEnabled(true);
-		
 		cleanCompleted.setEnabled(true);
 		disconnectSelected.setEnabled(true);
 		disconnectAll.setEnabled(true);
 
-		server = new Server(i, UploadListTableModel.getinstance().getData().toArray(new File[]{}), this::guiResetCallback, logger);
+		server = new Server(i, this, logger);
 		server.setFuture(Main.queueJob(server));
 		
 	}
 	
-	public void stopServer() {
-
-		if(!ClientListTableModel.getinstance().getData().isEmpty() && !SwingDialogs.confirm("Stop server?", "Really want to stop the server?\nconnections may be lost!")) {
-			return;
+	public boolean stopServer() {
+		if(server != null) {
+			if(!server.disconnect()) return false;
 		}
-		
-		if(server != null) server.disconnect();
-		
-		guiResetCallback();
-
+		resetGUI();
+		return true;
 	}
 	
-	public void guiResetCallback() {
-		
+	public void resetGUI() {
 		ip.setEnabled(true);
 		port.setEnabled(true);
 		ip_t.setEnabled(true);
@@ -329,13 +303,40 @@ public class ServerFrame extends JFrame {
 		addFile.setEnabled(true);
 		deleteSelectedFile.setEnabled(true);
 		
-		clientListTable.setEnabled(false);
+		clientTab.removeAll();
 		
 		cleanCompleted.setEnabled(false);
 		disconnectSelected.setEnabled(false);
 		disconnectAll.setEnabled(false);
+	}
+
+	void addClient(ConnectedClient client) {
+		ClientListTableModel model = new ClientListTableModel(UploadListTableModel.getinstance().getData(), client);
+		JTable clientListTable = new JTable() {
+			private static final long serialVersionUID = 8873559199947424949L;
+			@Override
+			public String getToolTipText(MouseEvent e) {
+				int row = rowAtPoint(e.getPoint());
+				int column = columnAtPoint(e.getPoint());
+				if (row == -1) return "";
+				if (column == 0) return model.getData().get(row).getStatus();
+				else if (column == 1) {
+					File f = model.getData().get(row).getFile();
+					if(f == null) return "-1";
+					else return Main.formatFileSize(f.length());
+				} else return model.getData().get(row).getProgressString();
+			}
+		};
+		clientListTable.setModel(model);
+		clientListTable.setAutoCreateColumnsFromModel(false);
+		clientListTable.getColumn("Progress").setCellRenderer(new ProgressRenderer());
+		clientListTable.setFillsViewportHeight(true);
+		clientListTable.getColumnModel().getColumn(0).setPreferredWidth(92);
+		clientListTable.getColumnModel().getColumn(1).setPreferredWidth(131);
+		clientListTable.getColumnModel().getColumn(2).setPreferredWidth(80);
 		
-		ClientListTableModel.getinstance().clearAll();
+		client.setFileQueue(model.getFileQueue());
 		
+		clientTab.addTab(client.getUUID().substring(0, 8), clientListTable);
 	}
 }

@@ -9,10 +9,12 @@ import java.nio.channels.SocketChannel;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Future;
+import java.util.function.Consumer;
 
 import io.github.awidesky.Main;
 import io.github.awidesky.guiUtil.SwingDialogs;
 import io.github.awidesky.guiUtil.TaskLogger;
+import io.github.awidesky.serverSide.ClientListTableModel.FileProgress;
 
 
 /**
@@ -26,29 +28,27 @@ public class ClientConnection implements Runnable {
 	private SocketChannel sendTo;
 	private InetSocketAddress remoteAddr;
 	
-	private ConcurrentLinkedQueue<File> fileQueue;
+	private ConcurrentLinkedQueue<FileProgress> fileQueue;
 	
 	private Future<?> future;
 	private boolean isAborted = false;
+	private Consumer<ClientConnection> finishCallback;
 	
-	private int progress = 0;
+	private FileProgress fileProgress;
 	private long fileSize = 0L;
 	private long total = 0L;
-	private String status = "";
 	
 	private ByteBuffer lenBuf = ByteBuffer.allocate(Main.lenBufSize);
 	private ByteBuffer nameBuf = ByteBuffer.allocate(128);
 	
-	private File curFile;
-	
 	private TaskLogger logger;
 	
-	public ClientConnection(TaskLogger logger, SocketChannel socket, InetSocketAddress remoteAddr, ConcurrentLinkedQueue<File> fileQueue) {
+	public ClientConnection(SocketChannel socket, InetSocketAddress remoteAddr, String id, ConcurrentLinkedQueue<FileProgress> fileQueue, Consumer<ClientConnection> finishCallback) {
 		this.sendTo = socket;
 		this.remoteAddr = remoteAddr;
 		this.fileQueue = fileQueue;
-		this.status = "Preparing...";
-		this.logger = logger;
+		this.logger = Main.getLogger("[%s-%s] ".formatted(id, remoteAddr.toString()));;
+		this.finishCallback = finishCallback;
 		
 		logger.info("Connected to " + remoteAddr);
 	}
@@ -61,13 +61,6 @@ public class ClientConnection implements Runnable {
 		}
 	}
 	
-	public String getIP() {
-		return remoteAddr.getAddress().getHostAddress();
-	}
-
-	public int getPort() {
-		return remoteAddr.getPort();
-	}
 	
 	/**
 	 * Start process of sending files.<br>
@@ -79,8 +72,7 @@ public class ClientConnection implements Runnable {
 	 * 
 	 * */
 	public void run() {
-		while((curFile = fileQueue.poll()) != null) {
-			ClientListTableModel.getinstance().updated(this);
+		while((fileProgress = fileQueue.poll()) != null) {
 			send();
 		}
 		
@@ -93,14 +85,16 @@ public class ClientConnection implements Runnable {
 			SwingDialogs.error("Failed to close connection with client!", "%e%", e, false);
 		}
 		logger.info("Connection closed. Tasked completed.");
+		finishCallback.accept(this);
 	}
 	
 	private void send() {
-		status = "Starting...";
+		fileProgress.setStatus("Starting...");
 
 		lenBuf.clear();
 		nameBuf.clear();
 
+		File curFile = fileProgress.getFile();
 		logger.info("Sending metadata of \"" + curFile.getName() + "\"");
 		/* Send metadata */
 
@@ -113,7 +107,7 @@ public class ClientConnection implements Runnable {
 				logger.info(str +"Thread interrupted while connecting with : " + remoteAddr.toString() + ", and download aborted!\n");
 			}
 			SwingDialogs.error("Failed to send metadata!", str + "%e%", e1, false);
-			status = "ERROR!";
+			fileProgress.setStatus("ERROR!");
 			return;
 		}
 
@@ -125,8 +119,7 @@ public class ClientConnection implements Runnable {
 		}
 
 		logger.info("Sending " + curFile.getAbsolutePath());
-		status = "Sending...";
-		progress = 0;
+		fileProgress.setStatus("Sending...");
 		fileSize = curFile.length();
 		total = 0L;
 
@@ -140,9 +133,9 @@ public class ClientConnection implements Runnable {
 				logger.info("Transferred %s (total : %s of %s) to %s" // TODO : debug level
 						.formatted(Main.formatFileSize(read), Main.formatFileSize(total), Main.formatFileSize(fileSize), remoteAddr));
 
-				progress = (int) Math.round(100.0 * total / fileSize);
-				logger.info("Sent " + total + "byte (" + progress + "%) from " + curFile.getName() + " to " + remoteAddr);
-				ClientListTableModel.getinstance().updated(this);
+				fileProgress.setProgress((int) Math.round(100.0 * total / fileSize));
+				fileProgress.setProgressString(fileProgress.getProgress() + "% (" + Main.formatFileSize(total) + " / " +  Main.formatFileSize(fileSize) + ")");
+				logger.info("Sent " + total + "byte (" + fileProgress.getProgress() + "%) from " + curFile.getName() + " to " + remoteAddr);
 			}
 
 		} catch (Exception e) {
@@ -150,16 +143,17 @@ public class ClientConnection implements Runnable {
 			String errStr = "Cannot send file : " + curFile.getAbsolutePath() + " ("
 					+ (int) Math.round(100.0 * total / fileSize) + "%)\n";
 			if(isAborted) { 
-				logger.info("Thread interrupted while connecting with : " + getIP() + ":" + getPort() + ", and download aborted!\n" + errStr);
+				logger.info("Thread interrupted while connecting with : " + remoteAddr + ", and download aborted!\n" + errStr);
 			}
 			SwingDialogs.error("Failed to send curFile!", errStr + "%e%", e, false);
 
-			status = "ERROR!";
+			fileProgress.setStatus("ERROR!");
 			return;
 
 		}
-		logger.info("Sent " +curFile.getName() + " successfully!");
-		status = "Completed!";
+		logger.info("Sent " + curFile.getName() + " successfully!");
+		fileProgress.setProgress(100);
+		fileProgress.setStatus("Completed!");
 
 		return;
 	}
@@ -197,34 +191,18 @@ public class ClientConnection implements Runnable {
 		return clientResponse.flip().get();
 	}
 
-	public File getNowSendingFile() {
-		return curFile;
-	}
-	
-	public int getProgress() {
-		return progress;
-	}
-
-	public String getProgressString() {
-		return progress + "% (" + Main.formatFileSize(total) + " / " +  Main.formatFileSize(fileSize) + ")";
-	}
-	
-	public boolean isFinished() {
-		return progress == 100;
-	}
 
 	/**
 	 * note : This method is invoked in EDT
 	 * */
 	public void disconnect() {
-		isAborted = true;
+		isAborted = true; //TODO : Atomic, and precise name
 		future.cancel(true); //cancel the task
 	}
 
-	public String getStatus() {
-		return status;
+	public String getAddress() {
+		return remoteAddr.toString();
 	}
-
 
 }
 

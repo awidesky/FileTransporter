@@ -1,7 +1,6 @@
 package io.github.awidesky.serverSide;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
@@ -21,8 +20,7 @@ import io.github.awidesky.guiUtil.TaskLogger;
 public class Server implements Runnable {
 
 	private int port;
-	private File[] files;
-	private Runnable resetCallback;
+	private ServerFrame frame;
 	private Future<?> future;
 	private boolean aborted = false;
 	private static String thisIP = null;
@@ -33,13 +31,10 @@ public class Server implements Runnable {
 	
 	private TaskLogger logger;
 	
-	public Server(int port, File[] files, Runnable resetCallback, TaskLogger logger) {
-
+	public Server(int port, ServerFrame serverFrame, TaskLogger logger) {
 		this.port = port;
-		this.files = files;
-		this.resetCallback = resetCallback;
+		this.frame = serverFrame;
 		this.logger = logger;
-
 	}
 
 	public String getselfIP() {
@@ -73,14 +68,12 @@ public class Server implements Runnable {
 				
 				ClientConnection sc = connectClient(server.accept());
 				if(sc == null) continue;
-				
-				ClientListTableModel.getinstance().addConnection(sc); //TODO : use tabbedpane per client
 				sc.setFuture(Main.queueJob(sc));
 			}
 
 			logger.info("Server stopped. closing server...");
 
-		} catch (Exception e) {
+		} catch (Exception e) { //TODO : find out if interrupted
 			if(aborted)	SwingDialogs.information("Server is stopped!", "Server is stopped by user, or server thread was interrupted!\nException message : " + e.getMessage(), true);
 			else SwingDialogs.error("Failed to connect!", "Failed to connect with an client!\n%e%", e, true);
 		} finally {
@@ -93,7 +86,7 @@ public class Server implements Runnable {
 				}
 			}
 			
-			resetCallback.run();
+			frame.resetGUI();
 		}
 
 	}
@@ -122,7 +115,9 @@ public class Server implements Runnable {
 				buf.clear().asLongBuffer().put(uu.getMostSignificantBits()).put(uu.getLeastSignificantBits()).flip();
 				while(buf.hasRemaining()) accepted.write(buf);
 				
-				clients.put(uu, new ConnectedClient(uu, files));
+				ConnectedClient c = new ConnectedClient(uu);
+				clients.put(uu, c);
+				frame.addClient(c);
 				logger.info("UUID sent. close connection..."); //TODO : additional metadata like maximum connections?
 				accepted.close();
 				return null;
@@ -131,7 +126,7 @@ public class Server implements Runnable {
 				logger.info("Recieved client UUID : " + uu + ", exist : " + clients.contains(uu)); //TODO : if false, NullPointerException...
 			}
 
-			ConnectedClient client = clients.computeIfAbsent(uu, u -> new ConnectedClient(u, files));
+			ConnectedClient client = clients.computeIfAbsent(uu, ConnectedClient::new);
 			return client.addChannel(accepted, remotAddress);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -140,7 +135,10 @@ public class Server implements Runnable {
 		}
 	}
 
-	public void disconnect() {
+	public boolean disconnect() {
+		if(!clients.values().stream().allMatch(ConnectedClient::disconnect))
+			return false;
+		
 		aborted = true;
 		future.cancel(true);
 		if(server != null) {
@@ -150,9 +148,14 @@ public class Server implements Runnable {
 				SwingDialogs.error("Failed to close server!", "%e%" , e, true);
 			}
 		}
+		return true;
 	}
 
 	public void setFuture(Future<?> future) {
 		this.future = future;
+	}
+
+	public boolean isAllConncectionCompleted() {
+		return clients.values().stream().allMatch(ConnectedClient::isCompleted);
 	}
 }

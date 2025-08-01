@@ -1,8 +1,9 @@
 package io.github.awidesky.serverSide;
 
+import java.io.File;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
@@ -11,12 +12,65 @@ import io.github.awidesky.guiUtil.SwingDialogs;
 
 public class ClientListTableModel extends AbstractTableModel {
 
-
 	private static final long serialVersionUID = 3855477049816688267L;
-	private final static ClientListTableModel instance = new ClientListTableModel();
-	private List<ClientConnection> rows = new ArrayList<>(); 
 	
-	private ClientListTableModel() {}
+	public class FileProgress {
+		private final File file;
+		private int progress;
+		private String progressString;
+		private String status;
+		
+		public FileProgress(File f) {
+			this.file = f;
+			this.setProgress(0);
+			this.setProgressString("0%");
+			this.setStatus("");
+		}
+		
+		public String getStatus() {
+			return status;
+		}
+		public void setStatus(String status) {
+			this.status = status;
+			updated(this); //TODO : if performance bottleneck on table update, pre-calculate indexOf(this) in constructor
+		}
+		public String getProgressString() {
+			return progressString;
+		}
+		public void setProgressString(String progressString) {
+			this.progressString = progressString;
+			updated(this);
+		}
+		public int getProgress() {
+			return progress;
+		}
+		public void setProgress(int progress) {
+			this.progress = progress;
+			updated(this);
+		}
+		public File getFile() {
+			return file;
+		}
+	}
+	
+	private List<FileProgress> rows = new ArrayList<>();
+	private ConcurrentLinkedQueue<FileProgress> fileQueue;
+	private ConnectedClient client;
+	
+	public ClientListTableModel(List<File> files, ConnectedClient client) {
+		this.client = client;
+		files.stream().map(FileProgress::new).forEach(rows::add);
+		fileQueue = new ConcurrentLinkedQueue<>(rows);
+		fireTableDataChanged();
+	}
+	
+	public ConcurrentLinkedQueue<FileProgress> getFileQueue() {
+		return fileQueue;
+	}
+	
+	public ConnectedClient getClient() {
+		return client;
+	}
 
 	@Override
 	public int getRowCount() {
@@ -30,18 +84,16 @@ public class ClientListTableModel extends AbstractTableModel {
 
 	@Override
 	public String getColumnName(int columnIndex) {
-		
 		if(columnIndex == 0)
-			return "Client";
+			return "Status";
 		else if(columnIndex == 1)
-			return "Now sending...";
-		else if (columnIndex == 2) {
+			return "File";
+		else if(columnIndex == 2)
 			return "Progress";
-		} else {
+		else {
 			SwingDialogs.error("Invalid column index!", "Invalid column index in UploadListTableModel : " + columnIndex, null, false);
 			return "null"; // this should not happen!
 		}
-		
 	}
 
 
@@ -49,12 +101,12 @@ public class ClientListTableModel extends AbstractTableModel {
 	public Object getValueAt(int rowIndex, int columnIndex) { 
 		
 		switch (columnIndex) {
-		case 0: // Client
-			return rows.get(rowIndex).getIP();
-		case 1: // Now sending...
-			return rows.get(rowIndex).getNowSendingFile(); //TODO: was getNowSendingFileString
+		case 0: // Status
+			return rows.get(rowIndex).getStatus();
+		case 1: // File
+			return rows.get(rowIndex).getFile();
 		case 2: // Progress
-			return rows.get(rowIndex).getProgress();
+			return rows.get(rowIndex).getProgress(); //TODO: was getNowSendingFileString
 		}
 		
 		SwingDialogs.error("Invalid column index!", "Invalid column index in DownloadingListTableModel : " + columnIndex, null, false);
@@ -64,79 +116,21 @@ public class ClientListTableModel extends AbstractTableModel {
 
 
 	public void clearDone() {
-
-		rows.removeIf((r) -> r.isFinished());
+		rows.removeIf(p -> p.getProgress() == 100);
 		fireTableDataChanged();
+	}
 
+	void updated(FileProgress fp) {
+		int idx = rows.indexOf(fp);
+		SwingUtilities.invokeLater(() -> { fireTableRowsUpdated(idx, idx); });
 	}
 	
-	public void disconectSelected(int[] selected) {
-
-		for (int r : selected) {
-			if (rows.get(r).isFinished()) { 
-				continue;
-			} else {
-				if (SwingDialogs.confirm("Before clearing!", "Some task(s) are not done!\nDisconnect connection(s)?")) {
-					break;
-				} else { return; }
-			}
-		}
-		
-		LinkedList<ClientConnection> temp = new LinkedList<>();
-		for (int r : selected) temp.add(rows.get(r));
-		rows.removeAll(temp);
-		
-		fireTableDataChanged();
-			
-	}
-
-	
-	/**
-	 * @return if user agreed to disconnect or all work queued were done.
-	 * */
-	public boolean clearAll() {
-
-		if(rows.isEmpty()) return true;
-		
-		rows.removeIf(ClientConnection::isFinished);
-		
-		if (!rows.isEmpty()) {
-			if (!SwingDialogs.confirm("Before clearing!",
-					"Some task(s) are not done!\nDisconnect all connection(s) and clear list?"))
-				return false;
-
-			rows.forEach((s) -> {
-				s.disconnect();
-			});
-		}
-		
-		rows.clear();
-		fireTableDataChanged();
-		return true;
-
-	}
-
-	public void addConnection(ClientConnection r) {
-
-		SwingUtilities.invokeLater(() -> {
-			rows.add(r);
-			fireTableRowsInserted(rows.size() - 1, rows.size() - 1);
-		});
-
-	}
-
-	public void updated(ClientConnection r) {
-
-		SwingUtilities.invokeLater(() -> { fireTableRowsUpdated(rows.indexOf(r), rows.indexOf(r)); });
-
-	}
-	
-	public List<ClientConnection> getData() {
+	public List<FileProgress> getData() {
 		return rows;
 	}
-	
-	public static ClientListTableModel getinstance() {
-		return instance;
-	}	
 
+	public FileProgress poll() {
+		return fileQueue.poll();
+	}
+	
 }
