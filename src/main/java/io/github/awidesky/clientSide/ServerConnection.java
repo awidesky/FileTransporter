@@ -61,7 +61,6 @@ public class ServerConnection implements Runnable{
 		logger.info("Running on " + Thread.currentThread());
 		String fileName = null;
 		boolean gotMetadata = false; // is metadata received?
-		boolean completed = false; // is connection completed without problem?
 		try (SocketChannel ch = SocketChannel.open()) {
 
 			logger.info("Connecting to Server...");
@@ -84,14 +83,12 @@ public class ServerConnection implements Runnable{
 				
 				if(!Main.readFromChannel(ch, lenBuf)) {
 					System.out.println("read length return false, lenBuf position : " + lenBuf.position());
-					completed = false;
 					break;
 				}
 
 				lenBuf.flip().asLongBuffer().get(lenData);
 				if(lenData[0] == -1 && lenData[1] == -1) {
 					logger.info("File transfer finished! Closing connection...");
-					completed = true;
 					break;
 				}
 				
@@ -107,7 +104,6 @@ public class ServerConnection implements Runnable{
 				
 				if(!Main.readFromChannel(ch, nameBuf)) {
 					System.out.println("read name return false, nameBuf position : " + nameBuf.position());
-					completed = false;
 					break;
 				}
 
@@ -116,6 +112,17 @@ public class ServerConnection implements Runnable{
 				gotMetadata = true;
 
 				destFile = new File(destDir, fileName);
+				while(true) {
+					if(destFile.exists()) {
+						logger.debug("Duplicate file : "+ destFile.getAbsolutePath());
+						if(SwingDialogs.confirm("File already exists!", destFile.getAbsolutePath() + " already exists!\nOverwrite file?")) {
+							destFile.delete();
+						} else {
+							destFile = new File(destDir, "new_" + fileName);
+							logger.debug("Rename file : "+ destFile.getAbsolutePath());
+						}
+					} else break;
+				}
 				DonwloadingStatus dstat = new DonwloadingStatus(destFile.getAbsolutePath(), lenData[1], this);
 				DownloadingListTableModel.getinstance().addTask(dstat);
 				if(destFile != null) {
@@ -141,10 +148,7 @@ public class ServerConnection implements Runnable{
 		} catch (Exception e) {
 			if(!gotMetadata) SwingDialogs.error(this.toString() + "Failed to receive metadata!", "Cannot receive metadata from :" + remoteAddress + "\n%e%", e, true); 
 			else SwingDialogs.error(this.toString() + "Failed to receive files!", "Cannot receive file from : " + remoteAddress + "\n%e%", e, true);
-		} finally {
-			SwingDialogs.information("Connection has closed", "Connection to :" + remoteAddress + " has closed " + (completed ? "successfully!" : "with error(s)!"), true);
 		}
-		
 	}
 
 	public InetSocketAddress getRemoteAddress() {
