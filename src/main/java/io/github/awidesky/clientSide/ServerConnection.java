@@ -42,7 +42,6 @@ public class ServerConnection implements Runnable{
 		this.port = port;
 		this.destDir = destination;
 		this.logger = Main.getLogger(this.toString());
-
 	}
 	
 	public void setFuture(Future<?> f) {
@@ -176,6 +175,7 @@ public class ServerConnection implements Runnable{
 				logger.info("Transferred %s (total : %s of %s) to %s" // TODO : debug level
 						.formatted(Main.formatFileSize(read), Main.formatFileSize(total), Main.formatFileSize(fileSize), remoteAddress));
 
+				dstat.setTransferred(total);
 				dstat.setProgress((int) Math.round(100.0 * total / fileSize));
 				logger.info("Downloaded " + total + "byte (" + dstat.getProgress() + "%) from " + remoteAddress + " to " + destFile.getName());
 				DownloadingListTableModel.getinstance().updated(dstat);

@@ -181,23 +181,23 @@ public class ServerFrame extends JFrame {
 		});
 		cleanCompleted.addActionListener((e) -> {
 			for (int i = 0; i < clientTab.getTabCount(); i++) {
-				ClientListTableModel model = (ClientListTableModel)((JTable)clientTab.getTabComponentAt(i)).getModel();
+				ClientListTableModel model = (ClientListTableModel)((JTable)clientTab.getComponentAt(i)).getModel();
 				if(model.getClient().isCompleted())
 					clientTab.removeTabAt(i);
 			}
 		});
 		disconnectAll.addActionListener((e) -> {
 			for (int i = 0; i < clientTab.getTabCount(); i++) {
-				ClientListTableModel model = (ClientListTableModel)((JTable)clientTab.getTabComponentAt(i)).getModel();
+				ClientListTableModel model = (ClientListTableModel)((JTable)clientTab.getComponentAt(i)).getModel();
 				if(model.getClient().disconnect())
 					clientTab.removeTabAt(i);
 			}
 		});
 		disconnectSelected.addActionListener((e) -> {
 			int i = clientTab.getSelectedIndex();
-			System.out.println("clientTab.getTabCount : " + clientTab.getTabCount()); //TODO
-			System.out.println("Selected index : " + i); //TODO
-			ClientListTableModel model = (ClientListTableModel)((JTable)clientTab.getTabComponentAt(i)).getModel();
+			if(i == -1) return;
+			
+			ClientListTableModel model = (ClientListTableModel)((JTable)clientTab.getComponentAt(i)).getModel();
 			if(model.getClient().disconnect())
 				clientTab.removeTabAt(i);
 		});
@@ -337,6 +337,6 @@ public class ServerFrame extends JFrame {
 		
 		client.setFileQueue(model.getFileQueue());
 		
-		clientTab.addTab(client.getUUID().substring(0, 8), clientListTable);
+		clientTab.addTab(client.getUUID().substring(0, 8), null, clientListTable, "Client UUID : " + client.getUUID());
 	}
 }

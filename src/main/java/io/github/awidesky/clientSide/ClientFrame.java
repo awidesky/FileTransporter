@@ -44,7 +44,7 @@ public class ClientFrame extends JFrame {
 		private static final long serialVersionUID = -4271449717757183126L;
 
 		@Override
-		public String getToolTipText(MouseEvent e) {  table.getToolTipText();
+		public String getToolTipText(MouseEvent e) { //TODO : add status
 			int row = rowAtPoint(e.getPoint());
 			int column = columnAtPoint(e.getPoint());
 			if (row == -1) return null; //TODO : check if returning null cause problem.
@@ -108,7 +108,8 @@ public class ClientFrame extends JFrame {
 		clearAll.setMargin(new Insets(0, 0, 0, 0));
 
 		connect.addActionListener((e) -> {
-
+			DownloadingListTableModel.getinstance().clearAll();
+			
 			if(ip_t.getText().equals("")) {
 		    	SwingDialogs.error("invalid ip!", "Invalid ip!", null, true);
 		    	return;
@@ -128,8 +129,8 @@ public class ClientFrame extends JFrame {
 				return;
 			}
 			
-			File destination = chooseSaveDest();
-			if(destination == null) return;
+			File destDir = chooseSaveDest();
+			if(destDir == null) return;
 			
 			ip.setEnabled(false);
 			port.setEnabled(false);
@@ -138,7 +139,7 @@ public class ClientFrame extends JFrame {
 			
 			connect.setEnabled(false);
 			
-			Main.queueJob(() -> FileReciever.startConnections(c, ip_t.getText(), i, destination, this::guiResetCallback));
+			Main.queueJob(() -> FileReciever.startConnections(c, ip_t.getText(), i, destDir, this::guiResetCallback));
 		});
 		cleanCompleted.addActionListener((e) -> {
 			DownloadingListTableModel.getinstance().clearDone();
@@ -187,18 +188,11 @@ public class ClientFrame extends JFrame {
 			port_t.setEnabled(true);
 
 			connect.setEnabled(true);
-
-			DownloadingListTableModel.getinstance().clearAll();
 		});
 	}
 	
 	/**
-	 * 
-	 * This method calls <code>SwingUtilities#invokeAndWait</code>. <br>
-	 * So never call this method in EDT! <br>
-	 * If there's already same file exist in chosen path, ask to overwrite it or not.
-	 * 
-	 * @return <code>File</code> object that represents the destination file. created before returning.
+	 * @return <code>File</code> object that represents the destination directory. created before returning.
 	 * 
 	 * */
 	private File chooseSaveDest() {

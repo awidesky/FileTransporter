@@ -5,9 +5,13 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import javax.swing.SwingUtilities;
 
@@ -23,7 +27,7 @@ public class FileReciever {
 	private static Logger logger = Main.getLogger("[FileReciever] ");
 	private static Runnable resetCallback;
 
-	public static void startConnections(int n, String ip, int port, File destination, Runnable resetCallback) {
+	public static void startConnections(int n, String ip, int port, File destDir, Runnable resetCallback) {
 		FileReciever.resetCallback = resetCallback;
 		
 		InetSocketAddress addr = new InetSocketAddress(ip, port);
@@ -42,15 +46,31 @@ public class FileReciever {
 			return;
 		}
 		
+		List<Future<?>> futures = new ArrayList<>(n);
 		for(int i = 1; i <= n; i++) {
-			ServerConnection fr = new ServerConnection(i, ip, port, destination);
+			ServerConnection fr = new ServerConnection(i, ip, port, destDir);
 			connList.add(fr);
-			fr.setFuture(Main.queueJob(fr));
+			Future<?> f = Main.queueJob(fr);
+			futures.add(f);
+			fr.setFuture(f);
 		}
+		
+		Main.queueJob(() -> {
+			for(Future<?> f : futures) {
+				try {
+					f.get();
+				} catch (CancellationException ce) {
+				} catch (InterruptedException | ExecutionException e) {
+					logger.info(e);
+				}
+			}
+			resetCallback.run();
+		});
 	}
 	
 	public static void disconnectAll() {
 		connList.forEach(ServerConnection::disconnect);
+		connList.clear();
 		uuid = null;
 		SwingUtilities.invokeLater(resetCallback);
 	}

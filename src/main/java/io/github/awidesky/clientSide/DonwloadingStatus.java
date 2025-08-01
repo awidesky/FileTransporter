@@ -31,6 +31,10 @@ public class DonwloadingStatus {
 		this.progress = progress;
 	}
 
+	public void setTransferred(long transferred) {
+		this.transferred = transferred;
+	}
+
 	public ServerConnection getFileReceiver() {
 		return fileReceiver;
 	}
@@ -52,7 +56,6 @@ public class DonwloadingStatus {
 	}
 	
 	public String getStaus() {
-		
 		if(status.equals("Downloading...")) {
 			return status + " (" + progress + "%)";
 		}
