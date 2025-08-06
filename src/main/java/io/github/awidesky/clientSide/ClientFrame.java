@@ -26,6 +26,7 @@ import io.github.awidesky.guiUtil.TaskLogger;
 public class ClientFrame extends JFrame {
 
 	
+	private static final long serialVersionUID = -1803029361762876339L;
 	private JLabel ip = new JLabel("IP :");
 	private JLabel port = new JLabel("Port :");
 	private JLabel connections = new JLabel("Connections :");

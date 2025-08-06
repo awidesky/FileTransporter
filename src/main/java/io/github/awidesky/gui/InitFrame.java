@@ -18,6 +18,8 @@ import io.github.awidesky.guiUtil.TaskLogger;
 
 public class InitFrame extends JFrame {
 
+	private static final long serialVersionUID = -8703030310217605609L;
+
 	private final TaskLogger logger = Main.getLogger("[InitFrame]");
 	
 	private JButton server = new JButton("Start a Server");
