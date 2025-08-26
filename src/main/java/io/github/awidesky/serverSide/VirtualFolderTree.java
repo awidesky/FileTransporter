@@ -26,6 +26,8 @@ public class VirtualFolderTree extends JFrame {
 	private DefaultMutableTreeNode root;
 
 	private File chooseDir = new File(System.getProperty("user.home"));
+	private JButton addFileBtn;
+	private JButton deleteBtn;
 	
 	public VirtualFolderTree() {
 		setTitle("Upload folder tree");
@@ -41,11 +43,14 @@ public class VirtualFolderTree extends JFrame {
 		JScrollPane scrollPane = new JScrollPane(tree);
 
 		JPanel panel = new JPanel();
-		JButton addFileBtn = new JButton("add files");
+		addFileBtn = new JButton("add files");
+		deleteBtn = new JButton("delete selected");
 
 		panel.add(addFileBtn);
+		panel.add(deleteBtn);
 
 		addFileBtn.addActionListener(e -> selectUploadFile());
+		deleteBtn.addActionListener(e -> deleteSelectedNode());
 
 		getContentPane().add(scrollPane, BorderLayout.CENTER);
 		getContentPane().add(panel, BorderLayout.SOUTH);
@@ -53,10 +58,8 @@ public class VirtualFolderTree extends JFrame {
 
 	private void selectUploadFile() {
 		TreePath path = tree.getSelectionPath();
-		if (path == null) {
-			JOptionPane.showMessageDialog(this, "Select folder to add file in folder tree!");
-			return;
-		}
+		DefaultMutableTreeNode parent = path == null ? root : (DefaultMutableTreeNode) path.getLastPathComponent();
+		if(parent != root && parent.isLeaf()) parent = (DefaultMutableTreeNode) parent.getParent();
 		
 		JFileChooser chooser = new JFileChooser(chooseDir);
 		chooser.setMultiSelectionEnabled(false);
@@ -65,9 +68,8 @@ public class VirtualFolderTree extends JFrame {
 		chooser.showOpenDialog(this);
 		File f = chooser.getSelectedFile();
 		
-		chooseDir = f.isDirectory() ? f : f.getParentFile();
+		chooseDir = f.getParentFile();
 		
-		DefaultMutableTreeNode parent = (DefaultMutableTreeNode) path.getLastPathComponent();
 		insertFileRecursive(f, buildVirtualPath(parent), parent);
 	}
 	
@@ -78,12 +80,10 @@ public class VirtualFolderTree extends JFrame {
 			DefaultMutableTreeNode folderNode = new DefaultMutableTreeNode(file.getName());
 			treeModel.insertNodeInto(folderNode, parentNode, parentNode.getChildCount());
 
-			// For each child, recurse
 			for (File child : file.listFiles()) {
 				insertFileRecursive(child, relativePath + "/", folderNode);
 			}
 		} else {
-			// Leaf file, wrap in SelectedFile
 			SelectedFile selectedFile = new SelectedFile(file, relativePath);
 			DefaultMutableTreeNode fileNode = new DefaultMutableTreeNode(selectedFile);
 			treeModel.insertNodeInto(fileNode, parentNode, parentNode.getChildCount());
@@ -101,10 +101,33 @@ public class VirtualFolderTree extends JFrame {
 				.collect(Collectors.joining("/")) + "/";
 	}
 
-	public static void main(String[] args) {
+	private void deleteSelectedNode() {
+		TreePath[] selectedPaths = tree.getSelectionPaths();
+		if (selectedPaths == null) {
+			JOptionPane.showMessageDialog(this, "Select a node to delete!");
+			return;
+		}
+		for(TreePath selectedPath : selectedPaths) {
+			DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) selectedPath.getLastPathComponent();
+			if (selectedNode == root) {
+				JOptionPane.showMessageDialog(this, "Cannot delete root node!");
+				return;
+			}
+
+			if (!selectedNode.isLeaf()
+					&& JOptionPane.showConfirmDialog(this, "This is a folder. Delete all contained files and subfolders?",
+							"Confirm Folder Deletion", JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION)
+				return;
+
+			DefaultMutableTreeNode parent = (DefaultMutableTreeNode) selectedNode.getParent();
+			treeModel.removeNodeFromParent(selectedNode);
+			tree.setSelectionPath(new TreePath(parent.getPath())); // reset selection
+		}
+	}
+
+	public static void main(String[] args) { //TODO : remove
 		SwingUtilities.invokeLater(() -> {
 			new VirtualFolderTree().setVisible(true);
 		});
 	}
 }
-
