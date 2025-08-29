@@ -2,7 +2,10 @@ package io.github.awidesky.serverSide;
 
 import java.awt.BorderLayout;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import javax.swing.JButton;
@@ -28,11 +31,17 @@ public class VirtualFolderTree extends JFrame {
 	private File chooseDir = new File(System.getProperty("user.home"));
 	private JButton addFileBtn;
 	private JButton deleteBtn;
+	private JFileChooser chooser;
+	
 	
 	public VirtualFolderTree() {
 		setTitle("Upload folder tree");
 		setSize(500, 400);
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
+		
+		chooser = new JFileChooser(chooseDir);
+		chooser.setMultiSelectionEnabled(false);
+		chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
 
 		root = new DefaultMutableTreeNode("root");
 		treeModel = new DefaultTreeModel(root);
@@ -55,16 +64,24 @@ public class VirtualFolderTree extends JFrame {
 		getContentPane().add(scrollPane, BorderLayout.CENTER);
 		getContentPane().add(panel, BorderLayout.SOUTH);
 	}
+	
+	public List<SelectedFile> getSelectedFiles() {
+		Enumeration<TreeNode> e = root.depthFirstEnumeration();
+		List<SelectedFile> list = new ArrayList<>(root.getLeafCount());
+		while (e.hasMoreElements()) {
+			DefaultMutableTreeNode node = (DefaultMutableTreeNode) e.nextElement();
+			Object userObject = node.getUserObject();
+			if(userObject instanceof SelectedFile s) list.add(s);
+		}
+		return list;
+	}
 
 	private void selectUploadFile() {
 		TreePath path = tree.getSelectionPath();
 		DefaultMutableTreeNode parent = path == null ? root : (DefaultMutableTreeNode) path.getLastPathComponent();
 		if(parent != root && parent.isLeaf()) parent = (DefaultMutableTreeNode) parent.getParent();
-		
-		JFileChooser chooser = new JFileChooser(chooseDir);
-		chooser.setMultiSelectionEnabled(false);
-		chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
-		
+
+		chooser.setCurrentDirectory(chooseDir);
 		chooser.showOpenDialog(this);
 		File f = chooser.getSelectedFile();
 		

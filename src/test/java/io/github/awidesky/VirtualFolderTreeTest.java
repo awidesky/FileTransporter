@@ -13,6 +13,8 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 
@@ -81,7 +83,7 @@ public class VirtualFolderTreeTest {
 	}
 
 	@Test
-	void testInsertRecursiveWithProperStructure() throws Exception {
+	void testTree() throws Exception {
 		// Prepare file objects (no actual files needed)
 		File fileRoot = new File(tempRoot, "fileRoot.txt"); fileRoot.createNewFile();
 
@@ -141,6 +143,22 @@ public class VirtualFolderTreeTest {
 
 		// folderB: b1.txt
 		assertSelectedFile(findChild(folderBNode, "b1.txt"), b1, "folderB/b1.txt");
+		
+		
+		Set<SelectedFile> l1 = new HashSet<>(treeUI.getSelectedFiles());
+		Set<SelectedFile> l2 = Set.of(
+				new SelectedFile(fileRoot, "fileRoot.txt"),
+				new SelectedFile(a1, "folderA/a1.txt"),
+				new SelectedFile(a2, "folderA/a2.txt"),
+				new SelectedFile(sub1, "folderA/subfolder1/sub1.txt"),
+				new SelectedFile(sub2, "folderA/subfolder1/sub2.txt"),
+				new SelectedFile(anotherSub1, "folderA/subfolder2/anotherSub1.txt"),
+				new SelectedFile(anotherSub2, "folderA/subfolder2/anotherSub2.txt"),
+				new SelectedFile(b1, "folderB/b1.txt")
+				);
+		
+		assertEquals(8, l1.size());
+		assertEquals(l2, l1);
 	}
 
 	private DefaultMutableTreeNode findChild(DefaultMutableTreeNode parent, String displayName) {
