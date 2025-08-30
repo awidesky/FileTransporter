@@ -1,30 +1,26 @@
 package io.github.awidesky.serverSide;
 
+import java.awt.BorderLayout;
 import java.awt.Dimension;
-import java.awt.Insets;
+import java.awt.FlowLayout;
 import java.awt.Toolkit;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
-import java.util.Arrays;
-import java.util.List;
 
+import javax.swing.Box;
 import javax.swing.JButton;
 import javax.swing.JDialog;
-import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
-import javax.swing.filechooser.FileFilter;
 
 import io.github.awidesky.Main;
-import io.github.awidesky.gui.ImageViewer;
 import io.github.awidesky.gui.ProgressRenderer;
 import io.github.awidesky.guiUtil.SwingDialogs;
 import io.github.awidesky.guiUtil.TaskLogger;
@@ -32,50 +28,30 @@ import io.github.awidesky.guiUtil.TaskLogger;
 public class ServerFrame extends JFrame {
 
 	private static final long serialVersionUID = 8677739105321293193L;
-	
+
 	private Server server = null;
 	private boolean isStarted = false;
-	
+
 	private TaskLogger logger = Main.getLogger("[Server] ");
-	
-	private JFileChooser chooser = new JFileChooser();;
-	private JDialog dialog = new JDialog();;
-	
+
+	private JDialog dialog = new JDialog();
+
 	private JLabel ip = new JLabel("IP : ");
 	private JLabel port = new JLabel("Port : ");
-	private JLabel total= new JLabel("Total : 0.00 byte");
 
 	private JTextField ip_t = new JTextField("localhost");
-	private JTextField port_t = new JTextField();
-	
+	private JTextField port_t = new JTextField(6);
+
 	private JButton start = new JButton("start server");
-	private JButton addFile = new JButton("add file...");
-	private JButton deleteSelectedFile = new JButton("delete selected");
 
 	private JButton cleanCompleted = new JButton("clean completed");
 	private JButton disconnectSelected = new JButton("disconnect selected");
 	private JButton disconnectAll = new JButton("clear all");
-	
-	private JTable fileListTable = new JTable() {
-		
-		private static final long serialVersionUID = -4271449717757183126L;
 
-		@Override
-		public String getToolTipText(MouseEvent e) { 
-			int row = rowAtPoint(e.getPoint());
-			int column = columnAtPoint(e.getPoint());
-			if (row == -1) return "";
-			if (column == 0) return UploadListTableModel.getinstance().getData().get(row).getAbsolutePath();
-			else return UploadListTableModel.getinstance().getData().get(row).length() + "bytes";
-		}
-		
-	};
-
-	
+	private VirtualFolderTree folderTree;
 	JTabbedPane clientTab = new JTabbedPane();
 	
 	public ServerFrame() {
-
 		setTitle("FileTransporter(server) " + Main.version);
 		setIconImage(Main.icon);
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
@@ -88,245 +64,157 @@ public class ServerFrame extends JFrame {
 				Main.kill(0);
 			}
 		});
-		setSize(350, 450); //add more height than fxml because it does not think about title length
+
+		setSize(600, 450);
 		Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
 		setLocation(dim.width/2-getSize().width/2, dim.height/2-getSize().height/2);
-		setLayout(null);
-		setResizable(false);
 
-		
+		setLayout(new BorderLayout());
+		setResizable(true);
+
 		dialog.setAlwaysOnTop(true);
-		
-		ImageViewer temp1 = new ImageViewer(chooser);
-		chooser.setMultiSelectionEnabled(true);
-		chooser.setAccessory(temp1);
-		chooser.addComponentListener(new ComponentAdapter() {
-		    public void componentResized(ComponentEvent e) {
-		    	temp1.dialogSizeChange();
-		    }
-		});
-		chooser.addChoosableFileFilter(new FileFilter() {
-			
-			public boolean accept(File f) {
-				if (f.isDirectory()
-						|| f.getName().endsWith(".jpeg")
-						|| f.getName().endsWith(".jpg")
-						|| f.getName().endsWith(".bmp")
-						|| f.getName().endsWith(".png"))
-					return true;
-				else
-					return false;
-			}
 
-			public String getDescription() {
-				return "Picture files (*.jpeg, *.jpg, *.png, *.bmp)";
-			}
-		});
-		
-		chooser.addChoosableFileFilter(new FileFilter() {
-			
-			public boolean accept(File f) {
-				if (f.isDirectory()
-						|| f.getName().endsWith(".pdf")
-						|| f.getName().endsWith(".docx")
-						|| f.getName().endsWith(".hwp")
-						|| f.getName().endsWith(".xlsx")
-						|| f.getName().endsWith(".pptx"))
-					return true;
-				else
-					return false;
-			}
+		JPanel mainTab = initMainTab();
+		JPanel controlTab = initControlTab();
 
-			public String getDescription() {
-				return "Document files (*.pdf, *.docx, *.hwp, *.xlsx, *.pptx)";
-			}
-		});
-		
-		
-		ip.setBounds(14, 14, ip.getPreferredSize().width, ip.getPreferredSize().height);
-		port.setBounds(180, 14, port.getPreferredSize().width, port.getPreferredSize().height);
-		total.setBounds(10, 170, 120, total.getPreferredSize().height);
-		
-		ip_t.setBounds(35, 10, 120, 22);
-		port_t.setBounds(220, 10, 97, 22);
-		
-		//Font f = UIManager.getDefaults().getFont("Button.font").deriveFont((float) 12.0);
-		
-		start.setBounds(128, 202, 80, 22);
-		start.setMargin(new Insets(0, 0, 0, 0));
-		
-		cleanCompleted.setBounds(10, 367, 115, 22);
-		cleanCompleted.setMargin(new Insets(0, 0, 0, 0));
-		cleanCompleted.setEnabled(false);
-		disconnectAll.setBounds(260, 367, 65, 22);
-		disconnectAll.setMargin(new Insets(0, 0, 0, 0));
-		disconnectAll.setEnabled(false);
-		disconnectSelected.setBounds(130, 367, 125, 22);
-		disconnectSelected.setMargin(new Insets(0, 0, 0, 0));
-		disconnectSelected.setEnabled(false);
-		addFile.setBounds(143, 166, 75, 22);
-		addFile.setMargin(new Insets(0, 0, 0, 0));
-		deleteSelectedFile.setBounds(225, 166, 100, 22);
-		deleteSelectedFile.setMargin(new Insets(0, 0, 0, 0));
-		
-		start.addActionListener((e) -> {
-			
-			if(isStarted) {
-				stopServer();
-			} else {
-				startServer();
-			}
-			isStarted = !isStarted;
-			
-		});
-		cleanCompleted.addActionListener((e) -> {
-			for (int i = 0; i < clientTab.getTabCount(); i++) {
-				ClientListTableModel model = (ClientListTableModel)((JTable)clientTab.getComponentAt(i)).getModel();
-				if(model.getClient().isCompleted())
-					clientTab.removeTabAt(i);
-			}
-		});
-		disconnectAll.addActionListener((e) -> {
-			for (int i = 0; i < clientTab.getTabCount(); i++) {
-				ClientListTableModel model = (ClientListTableModel)((JTable)clientTab.getComponentAt(i)).getModel();
-				if(model.getClient().disconnect())
-					clientTab.removeTabAt(i);
-			}
-		});
-		disconnectSelected.addActionListener((e) -> {
-			int i = clientTab.getSelectedIndex();
-			if(i == -1) return;
-			
-			ClientListTableModel model = (ClientListTableModel)((JTable)clientTab.getComponentAt(i)).getModel();
-			if(model.getClient().disconnect())
-				clientTab.removeTabAt(i);
-		});
-		deleteSelectedFile.addActionListener((e) -> {
-			UploadListTableModel.getinstance().deleteSelected(fileListTable.getSelectedRows());
-			total.setText("Total : " + Main.formatFileSize(UploadListTableModel.getinstance().getFileSizeTotal()));
-		});
-		addFile.addActionListener((e) -> {
-			if (chooser.showOpenDialog(dialog) != JFileChooser.APPROVE_OPTION) return;
-			List<File> temp = Arrays.asList(chooser.getSelectedFiles());
-			chooser.setCurrentDirectory(temp.get(0).getAbsoluteFile().getParentFile());
-			UploadListTableModel.getinstance().addFiles(temp);
-			total.setText("Total : " + Main.formatFileSize(UploadListTableModel.getinstance().getFileSizeTotal()));
-		});
+		JTabbedPane tabPane = new JTabbedPane();
+		tabPane.addTab("Main", mainTab);
+		tabPane.addTab("Control", controlTab);
 
-		
-		fileListTable.setModel(UploadListTableModel.getinstance());
-		fileListTable.setAutoCreateColumnsFromModel(false);
-		fileListTable.setFillsViewportHeight(true);
-		fileListTable.getColumnModel().getColumn(0).setPreferredWidth(200);
-		fileListTable.getColumnModel().getColumn(1).setPreferredWidth(80);
-		JScrollPane scrollPane = new JScrollPane(fileListTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-		scrollPane.setBounds(13, 45, 305, 117);
-		
-		
-		JScrollPane scrollPane1 = new JScrollPane(clientTab, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-		scrollPane1.setBounds(16, 231, 305, 127);
-		
-		
-		add(ip);
-		add(port);
-		add(total);
-		add(ip_t);
-		add(port_t);
-		add(start);
-		add(cleanCompleted);
-		add(disconnectAll);
-		add(deleteSelectedFile);
-		add(addFile);
-		add(disconnectSelected);
-		add(scrollPane);
-		add(scrollPane1);
-		
+		add(tabPane);
+
 		setVisible(true);
 	}
-	
-	public void startServer() {
+
+	private JPanel initMainTab() {
+		JPanel mainTab = new JPanel(new BorderLayout());
+		JPanel top = new JPanel(new FlowLayout(FlowLayout.CENTER));
+		top.add(ip);
+		top.add(ip_t);
+		top.add(Box.createHorizontalStrut(20));
+		top.add(port);
+		top.add(port_t);
+		mainTab.add(top, BorderLayout.NORTH);
 		
+		start.addActionListener((e) -> {
+			if(isStarted) stopServer();
+			else startServer();
+			isStarted = !isStarted;
+		});
+		folderTree = new VirtualFolderTree(start);
+		mainTab.add(folderTree, BorderLayout.CENTER);
+
+		return mainTab;
+	}
+
+
+	private JPanel initControlTab() {
+		JPanel controlTab = new JPanel(new BorderLayout());
+
+		JPanel buttons = new JPanel();
+		cleanCompleted.setEnabled(false);
+		disconnectAll.setEnabled(false);
+		disconnectSelected.setEnabled(false);
+		buttons.add(cleanCompleted);
+		buttons.add(disconnectAll);
+		buttons.add(disconnectSelected);
+
+		controlTab.add(buttons, BorderLayout.SOUTH);
+
+		JScrollPane clientScroll = new JScrollPane(clientTab, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+		clientScroll.setPreferredSize(new Dimension(305, 127));
+		controlTab.add(clientScroll, BorderLayout.CENTER);
+
+		return controlTab;
+	}
+
+
+	public void startServer() {
 		if(ip_t.getText().equals("")) {
 			SwingDialogs.error("invalid ip!", "Invalid ip!", null, true);
-	    	return;
+			return;
 		}
-		
-		if(UploadListTableModel.getinstance().getData().isEmpty()) {
+		if(folderTree.isEmpty()) {
 			SwingDialogs.error("No file is chosen!", "There's no file to send!", null, true);
-	    	return;
+			return;
 		}
-		
+
 		int i;
 		try {
-	        i = Integer.parseInt(port_t.getText());
-	        if(i < 0 || 65535 < i) throw new NumberFormatException("port number must be in between 0 ~ 65535");
-	    } catch (NumberFormatException nfe) {
-	    	SwingDialogs.error("invalid port number!", "Invalid port number!\n%e%", nfe, true);
-	    	return;
-	    }
-		
+			i = Integer.parseInt(port_t.getText());
+			if(i < 0 || 65535 < i)
+				throw new NumberFormatException("port number must be in between 0 ~ 65535");
+		} catch (NumberFormatException nfe) {
+			SwingDialogs.error("invalid port number!", "Invalid port number!\n%e%", nfe, true);
+			return;
+		}
+
 		ip.setEnabled(false);
 		port.setEnabled(false);
 		ip_t.setEnabled(false);
 		port_t.setEnabled(false);
-		
 		start.setText("stop server");
-		fileListTable.setEnabled(false);
-		addFile.setEnabled(false);
-		deleteSelectedFile.setEnabled(false);
-		
+
+		folderTree.setEnableAll(false);
+
 		cleanCompleted.setEnabled(true);
 		disconnectSelected.setEnabled(true);
 		disconnectAll.setEnabled(true);
 
 		server = new Server(i, this, logger);
 		server.setFuture(Main.queueJob(server));
-		
 	}
-	
+
 	public boolean stopServer() {
 		if(server != null) {
-			if(!server.disconnect()) return false;
+			if(!server.disconnect())
+				return false;
 		}
 		resetGUI();
 		return true;
 	}
-	
+
 	public void resetGUI() {
 		ip.setEnabled(true);
 		port.setEnabled(true);
 		ip_t.setEnabled(true);
 		port_t.setEnabled(true);
-		
 		start.setText("start server");
-		fileListTable.setEnabled(true);
-		addFile.setEnabled(true);
-		deleteSelectedFile.setEnabled(true);
-		
+
+		folderTree.setEnableAll(true);
+
 		clientTab.removeAll();
-		
 		cleanCompleted.setEnabled(false);
 		disconnectSelected.setEnabled(false);
 		disconnectAll.setEnabled(false);
 	}
 
 	void addClient(ConnectedClient client) {
-		ClientListTableModel model = new ClientListTableModel(UploadListTableModel.getinstance().getData(), client);
+		ClientListTableModel model = new ClientListTableModel(folderTree.getSelectedFiles(), client);
 		JTable clientListTable = new JTable() {
+
 			private static final long serialVersionUID = 8873559199947424949L;
+
 			@Override
 			public String getToolTipText(MouseEvent e) {
 				int row = rowAtPoint(e.getPoint());
 				int column = columnAtPoint(e.getPoint());
-				if (row == -1) return "";
-				if (column == 0) return model.getData().get(row).getStatus();
+				if (row == -1)
+					return "";
+				if (column == 0)
+					return model.getData().get(row).getStatus();
 				else if (column == 1) {
 					File f = model.getData().get(row).getFile();
-					if(f == null) return "-1";
-					else return f.getAbsolutePath();
-				} else return model.getData().get(row).getProgressString();
+					if(f == null)
+						return "-1";
+					else
+						return f.getAbsolutePath();
+				}
+				else
+					return model.getData().get(row).getProgressString();
 			}
 		};
+
 		clientListTable.setModel(model);
 		clientListTable.setAutoCreateColumnsFromModel(false);
 		clientListTable.getColumn("Progress").setCellRenderer(new ProgressRenderer());
@@ -334,9 +222,8 @@ public class ServerFrame extends JFrame {
 		clientListTable.getColumnModel().getColumn(0).setPreferredWidth(92);
 		clientListTable.getColumnModel().getColumn(1).setPreferredWidth(131);
 		clientListTable.getColumnModel().getColumn(2).setPreferredWidth(80);
-		
+
 		client.setFileQueue(model.getFileQueue());
-		
 		clientTab.addTab(client.getUUID().substring(0, 8), null, clientListTable, "Client UUID : " + client.getUUID());
 	}
 }

@@ -16,6 +16,7 @@ import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.swing.JButton;
 import javax.swing.tree.DefaultMutableTreeNode;
 
 import org.junit.jupiter.api.AfterEach;
@@ -49,7 +50,7 @@ public class VirtualFolderTreeTest {
 
 	@BeforeEach
 	void setup() throws Exception {
-		treeUI = new VirtualFolderTree();
+		treeUI = new VirtualFolderTree(new JButton("Dummy startButton"));
 
 		var rootField = VirtualFolderTree.class.getDeclaredField("root");
 		rootField.setAccessible(true);

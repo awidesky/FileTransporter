@@ -15,12 +15,12 @@ public class ClientListTableModel extends AbstractTableModel {
 	private static final long serialVersionUID = 3855477049816688267L;
 	
 	public class FileProgress {
-		private final File file;
+		private final SelectedFile file;
 		private int progress;
 		private String progressString;
 		private String status;
 		
-		public FileProgress(File f) {
+		public FileProgress(SelectedFile f) {
 			this.file = f;
 			this.setProgress(0);
 			this.setProgressString("0%");
@@ -49,7 +49,10 @@ public class ClientListTableModel extends AbstractTableModel {
 			updated(this);
 		}
 		public File getFile() {
-			return file;
+			return file.actual();
+		}
+		public String getRelativePath() {
+			return file.relative();
 		}
 	}
 	
@@ -57,9 +60,9 @@ public class ClientListTableModel extends AbstractTableModel {
 	private ConcurrentLinkedQueue<FileProgress> fileQueue;
 	private ConnectedClient client;
 	
-	public ClientListTableModel(List<File> files, ConnectedClient client) {
+	public ClientListTableModel(List<SelectedFile> list, ConnectedClient client) {
 		this.client = client;
-		files.stream().map(FileProgress::new).forEach(rows::add);
+		list.stream().map(FileProgress::new).forEach(rows::add);
 		fileQueue = new ConcurrentLinkedQueue<>(rows);
 		fireTableDataChanged();
 	}

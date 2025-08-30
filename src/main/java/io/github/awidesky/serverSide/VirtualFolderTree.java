@@ -1,27 +1,38 @@
 package io.github.awidesky.serverSide;
 
 import java.awt.BorderLayout;
+import java.awt.Point;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import javax.swing.Box;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JFileChooser;
-import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTree;
-import javax.swing.SwingUtilities;
+import javax.swing.ToolTipManager;
+import javax.swing.filechooser.FileFilter;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 
-public class VirtualFolderTree extends JFrame {
+import io.github.awidesky.Main;
+import io.github.awidesky.gui.ImageViewer;
+
+public class VirtualFolderTree extends JPanel {
 	
 	private static final long serialVersionUID = 2135376001154602321L;
 	private JTree tree;
@@ -31,38 +42,92 @@ public class VirtualFolderTree extends JFrame {
 	private File chooseDir = new File(System.getProperty("user.home"));
 	private JButton addFileBtn;
 	private JButton deleteBtn;
+	private JCheckBox selectHidden;
 	private JFileChooser chooser;
+	private JLabel total = new JLabel("Total : 0.00 byte");
 	
 	
-	public VirtualFolderTree() {
-		setTitle("Upload folder tree");
-		setSize(500, 400);
-		setDefaultCloseOperation(EXIT_ON_CLOSE);
-		
+	public VirtualFolderTree(JButton startButton) {
+		setLayout(new BorderLayout());
 		chooser = new JFileChooser(chooseDir);
-		chooser.setMultiSelectionEnabled(false);
+		chooser.setMultiSelectionEnabled(true);
 		chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+		JPanel accessory = new JPanel(new BorderLayout());
+		ImageViewer temp1 = new ImageViewer(chooser);
+		selectHidden = new JCheckBox("Select hidden files");
+		selectHidden.addActionListener(e -> chooser.setFileHidingEnabled(!selectHidden.isSelected()));
+		accessory.add(temp1, BorderLayout.CENTER);
+		accessory.add(selectHidden, BorderLayout.SOUTH);
+		chooser.setAccessory(accessory);
+		chooser.addComponentListener(new ComponentAdapter() {
+			public void componentResized(ComponentEvent e) {
+				temp1.dialogSizeChange();
+			}
+		});
+		chooser.addChoosableFileFilter(new FileFilter() {
+			public boolean accept(File f) {
+				if (f.isDirectory() || f.getName().endsWith(".jpeg") || f.getName().endsWith(".jpg") || f.getName().endsWith(".bmp") || f.getName().endsWith(".png"))
+					return true;
+				else
+					return false;
+			}
+			public String getDescription() {
+				return "Picture files (*.jpeg, *.jpg, *.png, *.bmp)";
+			}
+		});
+		chooser.addChoosableFileFilter(new FileFilter() {
+			public boolean accept(File f) {
+				if (f.isDirectory() || f.getName().endsWith(".pdf") || f.getName().endsWith(".docx") || f.getName().endsWith(".hwp") || f.getName().endsWith(".xlsx") || f.getName().endsWith(".pptx"))
+					return true;
+				else
+					return false;
+			}
+			public String getDescription() {
+				return "Document files (*.pdf, *.docx, *.hwp, *.xlsx, *.pptx)";
+			}
+		});
 
 		root = new DefaultMutableTreeNode("root");
 		treeModel = new DefaultTreeModel(root);
-		tree = new JTree(treeModel);
+		tree = new JTree(treeModel) {
+		    private static final long serialVersionUID = -3171345745110920282L;
+			@Override
+		    public String getToolTipText(MouseEvent e) {
+		    	Point p = e.getPoint();
+		        TreePath path = getPathForLocation(p.x, p.y);
+		        if (path == null) return null;
+
+		        Object o = ((DefaultMutableTreeNode)path.getLastPathComponent()).getUserObject();
+				if (o instanceof SelectedFile s) {
+					File f = s.actual();
+					return f.getAbsolutePath() + " (" + Main.formatFileSize(f.length()) + ")";
+				} else return o.toString();
+			}
+		};
+		ToolTipManager.sharedInstance().registerComponent(tree);
 		tree.setShowsRootHandles(true);
 		tree.setEditable(false);
 
 		JScrollPane scrollPane = new JScrollPane(tree);
 
-		JPanel panel = new JPanel();
+		JPanel bottom = new JPanel(new BorderLayout());
+		JPanel bottomLeft = new JPanel();
 		addFileBtn = new JButton("add files");
 		deleteBtn = new JButton("delete selected");
-
-		panel.add(addFileBtn);
-		panel.add(deleteBtn);
+		bottomLeft.add(addFileBtn);
+		bottomLeft.add(deleteBtn);
+		bottomLeft.add(total);
+		
+		bottom.add(bottomLeft, BorderLayout.WEST);
+		bottom.add(Box.createHorizontalStrut(40));
+		bottom.add(startButton, BorderLayout.EAST);
+		
 
 		addFileBtn.addActionListener(e -> selectUploadFile());
 		deleteBtn.addActionListener(e -> deleteSelectedNode());
 
-		getContentPane().add(scrollPane, BorderLayout.CENTER);
-		getContentPane().add(panel, BorderLayout.SOUTH);
+		add(scrollPane, BorderLayout.CENTER);
+		add(bottom, BorderLayout.SOUTH);
 	}
 	
 	public List<SelectedFile> getSelectedFiles() {
@@ -76,28 +141,37 @@ public class VirtualFolderTree extends JFrame {
 		return list;
 	}
 
+	public boolean isEmpty() {
+		return root.getChildCount() == 0;
+	}
 	private void selectUploadFile() {
 		TreePath path = tree.getSelectionPath();
 		DefaultMutableTreeNode parent = path == null ? root : (DefaultMutableTreeNode) path.getLastPathComponent();
 		if(parent != root && parent.isLeaf()) parent = (DefaultMutableTreeNode) parent.getParent();
 
 		chooser.setCurrentDirectory(chooseDir);
-		chooser.showOpenDialog(this);
-		File f = chooser.getSelectedFile();
+		if(chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
+		File[] arr = chooser.getSelectedFiles();
+		Arrays.sort(arr, Comparator.comparing(File::getName));
 		
-		chooseDir = f.getParentFile();
+		chooseDir = arr[0].getParentFile();
 		
-		insertFileRecursive(f, buildVirtualPath(parent), parent);
+		for(File f : arr) insertFileRecursive(f, buildVirtualPath(parent), parent);
+
+		total.setText("Total : " + Main.formatFileSize(getSelectedFiles().stream().map(SelectedFile::actual).mapToLong(File::length).sum()));
 	}
 	
 	private void insertFileRecursive(File file, String parentVirtualPath, DefaultMutableTreeNode parentNode) {
+		if(!selectHidden.isSelected() && file.isHidden()) return;
 		String relativePath = parentVirtualPath + file.getName();
 		
 		if (file.isDirectory()) {
 			DefaultMutableTreeNode folderNode = new DefaultMutableTreeNode(file.getName());
 			treeModel.insertNodeInto(folderNode, parentNode, parentNode.getChildCount());
 
-			for (File child : file.listFiles()) {
+			File[] arr = file.listFiles();
+			Arrays.sort(arr, Comparator.comparing(File::getName));
+			for (File child : arr) {
 				insertFileRecursive(child, relativePath + "/", folderNode);
 			}
 		} else {
@@ -140,11 +214,14 @@ public class VirtualFolderTree extends JFrame {
 			treeModel.removeNodeFromParent(selectedNode);
 			tree.setSelectionPath(new TreePath(parent.getPath())); // reset selection
 		}
+		total.setText("Total : " + Main.formatFileSize(getSelectedFiles().stream().map(SelectedFile::actual).mapToLong(File::length).sum()));
 	}
 
-	public static void main(String[] args) { //TODO : remove
-		SwingUtilities.invokeLater(() -> {
-			new VirtualFolderTree().setVisible(true);
-		});
+	public void setEnableAll(boolean b) {
+		//tree.setEnabled(b);
+		addFileBtn.setEnabled(b);
+		deleteBtn.setEnabled(b);
+		selectHidden.setEnabled(b);
 	}
+
 }
