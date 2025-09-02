@@ -86,7 +86,7 @@ public class Server implements Runnable {
 				}
 			}
 			
-			frame.resetGUI();
+			frame.resetGUI(true);
 		}
 
 	}

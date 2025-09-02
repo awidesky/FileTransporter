@@ -10,11 +10,14 @@ import java.awt.event.WindowEvent;
 import java.io.File;
 
 import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
@@ -41,8 +44,13 @@ public class ServerFrame extends JFrame {
 
 	private JTextField ip_t = new JTextField("localhost");
 	private JTextField port_t = new JTextField(6);
+	
+	private JCheckBox encryptChannetcb = new JCheckBox("Encrypt channel");
+	private JCheckBox passwordcb = new JCheckBox("Password");
+	private JPasswordField passwordField = new JPasswordField(15);
+	private JCheckBox checkFileHashcb = new JCheckBox("Check file hash");
 
-	private JButton start = new JButton("start server");
+	private JButton start = new JButton("START server");
 
 	private JButton cleanCompleted = new JButton("clean completed");
 	private JButton disconnectSelected = new JButton("disconnect selected");
@@ -65,7 +73,7 @@ public class ServerFrame extends JFrame {
 			}
 		});
 
-		setSize(600, 450);
+		setSize(650, 450);
 		Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
 		setLocation(dim.width/2-getSize().width/2, dim.height/2-getSize().height/2);
 
@@ -88,12 +96,24 @@ public class ServerFrame extends JFrame {
 
 	private JPanel initMainTab() {
 		JPanel mainTab = new JPanel(new BorderLayout());
-		JPanel top = new JPanel(new FlowLayout(FlowLayout.CENTER));
-		top.add(ip);
-		top.add(ip_t);
-		top.add(Box.createHorizontalStrut(20));
-		top.add(port);
-		top.add(port_t);
+		JPanel top = new JPanel();
+		top.setLayout(new BoxLayout(top, BoxLayout.Y_AXIS));
+		JPanel addr = new JPanel(new FlowLayout());
+		addr.add(ip);
+		addr.add(ip_t);
+		addr.add(Box.createHorizontalStrut(20));
+		addr.add(port);
+		addr.add(port_t);
+		JPanel options = new JPanel();
+		passwordField.setEnabled(false);
+		passwordcb.addActionListener(e -> passwordField.setEnabled(passwordcb.isSelected()));
+		options.add(passwordcb);
+		options.add(passwordField);
+		options.add(Box.createHorizontalStrut(20));
+		options.add(encryptChannetcb);
+		options.add(checkFileHashcb);
+		top.add(addr);
+		top.add(options);
 		mainTab.add(top, BorderLayout.NORTH);
 		
 		start.addActionListener((e) -> {
@@ -149,17 +169,7 @@ public class ServerFrame extends JFrame {
 			return;
 		}
 
-		ip.setEnabled(false);
-		port.setEnabled(false);
-		ip_t.setEnabled(false);
-		port_t.setEnabled(false);
-		start.setText("stop server");
-
-		folderTree.setEnableAll(false);
-
-		cleanCompleted.setEnabled(true);
-		disconnectSelected.setEnabled(true);
-		disconnectAll.setEnabled(true);
+		resetGUI(false);
 
 		server = new Server(i, this, logger);
 		server.setFuture(Main.queueJob(server));
@@ -170,23 +180,29 @@ public class ServerFrame extends JFrame {
 			if(!server.disconnect())
 				return false;
 		}
-		resetGUI();
+		resetGUI(true);
 		return true;
 	}
 
-	public void resetGUI() {
-		ip.setEnabled(true);
-		port.setEnabled(true);
-		ip_t.setEnabled(true);
-		port_t.setEnabled(true);
-		start.setText("start server");
+	public void resetGUI(boolean enabled) {
+		ip.setEnabled(enabled);
+		port.setEnabled(enabled);
+		ip_t.setEnabled(enabled);
+		port_t.setEnabled(enabled);
+		
+		start.setText(enabled ? "START server" : "STOP server");
+		
+		passwordField.setEnabled(enabled && passwordcb.isSelected());
+		encryptChannetcb.setEnabled(enabled);
+		passwordcb.setEnabled(enabled);
+		checkFileHashcb.setEnabled(enabled);
 
-		folderTree.setEnableAll(true);
+		folderTree.setEnableAll(enabled);
 
-		clientTab.removeAll();
-		cleanCompleted.setEnabled(false);
-		disconnectSelected.setEnabled(false);
-		disconnectAll.setEnabled(false);
+		if(enabled) clientTab.removeAll();
+		cleanCompleted.setEnabled(!enabled);
+		disconnectSelected.setEnabled(!enabled);
+		disconnectAll.setEnabled(!enabled);
 	}
 
 	void addClient(ConnectedClient client) {
