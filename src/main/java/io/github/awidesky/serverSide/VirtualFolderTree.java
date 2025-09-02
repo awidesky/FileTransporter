@@ -130,7 +130,12 @@ public class VirtualFolderTree extends JPanel {
 		add(bottom, BorderLayout.SOUTH);
 	}
 	
+	private List<SelectedFile> selectedFiles = null;
 	public List<SelectedFile> getSelectedFiles() {
+		if(selectedFiles == null) return evaluateSelectedFiles();
+		else return selectedFiles;
+	}
+	private List<SelectedFile> evaluateSelectedFiles() {
 		Enumeration<TreeNode> e = root.depthFirstEnumeration();
 		List<SelectedFile> list = new ArrayList<>(root.getLeafCount());
 		while (e.hasMoreElements()) {
@@ -217,11 +222,13 @@ public class VirtualFolderTree extends JPanel {
 		total.setText("Total : " + Main.formatFileSize(getSelectedFiles().stream().map(SelectedFile::actual).mapToLong(File::length).sum()));
 	}
 
-	public void setEnableAll(boolean b) {
+	public void setEnableAll(boolean enable) {
 		//tree.setEnabled(b);
-		addFileBtn.setEnabled(b);
-		deleteBtn.setEnabled(b);
-		selectHidden.setEnabled(b);
+		addFileBtn.setEnabled(enable);
+		deleteBtn.setEnabled(enable);
+		selectHidden.setEnabled(enable);
+		
+		selectedFiles = enable ? null : evaluateSelectedFiles();
 	}
 
 }
