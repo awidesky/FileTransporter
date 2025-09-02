@@ -19,7 +19,7 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
 import io.github.awidesky.Main;
-import io.github.awidesky.gui.ProgressRenderer;
+import io.github.awidesky.common.gui.ProgressRenderer;
 import io.github.awidesky.guiUtil.SwingDialogs;
 import io.github.awidesky.guiUtil.TaskLogger;
 

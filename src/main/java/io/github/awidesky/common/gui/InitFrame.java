@@ -1,4 +1,4 @@
-package io.github.awidesky.gui;
+package io.github.awidesky.common.gui;
 
 import java.awt.Dimension;
 import java.awt.Insets;

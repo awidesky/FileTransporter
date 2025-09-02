@@ -24,7 +24,7 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 
 import io.github.awidesky.Main;
-import io.github.awidesky.gui.ProgressRenderer;
+import io.github.awidesky.common.gui.ProgressRenderer;
 import io.github.awidesky.guiUtil.SwingDialogs;
 import io.github.awidesky.guiUtil.TaskLogger;
 

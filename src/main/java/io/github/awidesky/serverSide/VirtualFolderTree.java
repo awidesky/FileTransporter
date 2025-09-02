@@ -30,7 +30,7 @@ import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 
 import io.github.awidesky.Main;
-import io.github.awidesky.gui.ImageViewer;
+import io.github.awidesky.common.gui.ImageViewer;
 
 public class VirtualFolderTree extends JPanel {
 	
