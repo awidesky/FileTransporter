@@ -32,7 +32,6 @@ public class ServerConnection implements Runnable{
 	
 	private ByteBuffer lenBuf = ByteBuffer.allocate(Main.lenBufSize);
 	private ByteBuffer nameBuf = ByteBuffer.allocate(128);
-	private ByteBuffer responseBuf = ByteBuffer.allocate(1);
 	private Future<?> future;
 	/** called when process aborted/cancelled, so that the reset GUI to initial state */
 
@@ -74,7 +73,6 @@ public class ServerConnection implements Runnable{
 				
 				lenBuf.clear();
 				nameBuf.clear();
-				responseBuf.clear();
 				
 				gotMetadata = false;
 				long[] lenData = new long[2]; // first is length of file name, and second is length of the file(both
@@ -125,12 +123,6 @@ public class ServerConnection implements Runnable{
 				DonwloadingStatus dstat = new DonwloadingStatus(destFile.getAbsolutePath(), lenData[1], this);
 				DownloadingListTableModel.getinstance().addTask(dstat);
 				if(destFile != null) {
-					logger.info("Sending download request...");
-					responseBuf.put((byte) 1).flip();
-					while (responseBuf.hasRemaining()) {
-						ch.write(responseBuf);
-					}
-
 					logger.info("Initiate downloading " + fileName);
 					if(!download(ch, lenData[1], dstat)) { //download failed!
 						dstat.setStatus("ERROR!");

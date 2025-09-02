@@ -98,9 +98,8 @@ public class ClientConnection implements Runnable {
 		logger.info("Sending metadata of \"" + curFile.getName() + "\"");
 		/* Send metadata */
 
-		byte response;
 		try {
-			response = sendMetadata(curFile);
+			sendMetadata(curFile);
 		} catch (Exception e1) {
 			String str = "Cannot send metadata : " + curFile.getAbsolutePath() + "\n";
 			if(isAborted) {
@@ -111,12 +110,6 @@ public class ClientConnection implements Runnable {
 			return;
 		}
 
-		logger.info("Client response : " + (int)response);
-
-		if(response == 0) { /* User don't want to download this curFile, skip it. */
-			logger.info("Skip " +curFile.getName() + " because client wanted to.");
-			return;
-		}
 
 		logger.info("Sending " + curFile.getAbsolutePath());
 		fileProgress.setStatus("Sending...");
@@ -158,8 +151,7 @@ public class ClientConnection implements Runnable {
 		return;
 	}
 	
-	private byte sendMetadata(File f) throws IOException {
-		ByteBuffer clientResponse = ByteBuffer.allocate(1); //if client chose to receive this curFile, this buffer will contain 1, otherwise 0.
+	private void sendMetadata(File f) throws IOException {
 		lenBuf.clear();
 		nameBuf.clear();
 		
@@ -181,14 +173,6 @@ public class ClientConnection implements Runnable {
 			sendTo.write(nameBuf);
 		}
 		logger.info("Metadata sent. Listen for client response...");
-		
-		if(!Main.readFromChannel(sendTo, clientResponse)) {
-			System.out.println("read response return false, clientResponseBuf position : " + clientResponse.position());
-			logger.info("Tried to read response from client, but client disconnected");
-			return 0;
-		}
-		
-		return clientResponse.flip().get();
 	}
 
 
