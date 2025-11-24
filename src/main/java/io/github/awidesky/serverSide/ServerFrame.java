@@ -27,6 +27,7 @@ import io.github.awidesky.Main;
 import io.github.awidesky.common.gui.ProgressRenderer;
 import io.github.awidesky.guiUtil.SwingDialogs;
 import io.github.awidesky.guiUtil.TaskLogger;
+import io.github.awidesky.serverSide.selectedFile.VirtualFolderTree;
 
 public class ServerFrame extends JFrame {
 
@@ -171,7 +172,8 @@ public class ServerFrame extends JFrame {
 
 		resetGUI(false);
 
-		server = new Server(i, this, logger);
+		server = new Server(i, this, logger, checkFileHashcb.isSelected(), encryptChannetcb.isSelected(),
+				passwordcb.isSelected() ? passwordField.getPassword() : null);
 		server.setFuture(Main.queueJob(server));
 	}
 
@@ -220,7 +222,7 @@ public class ServerFrame extends JFrame {
 				if (column == 0)
 					return model.getData().get(row).getStatus();
 				else if (column == 1) {
-					File f = model.getData().get(row).getFile();
+					File f = model.getData().get(row).getFile().actual();
 					if(f == null)
 						return "-1";
 					else

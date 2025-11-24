@@ -6,8 +6,12 @@ import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.CharBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
@@ -16,6 +20,16 @@ import java.util.stream.Stream;
 import io.github.awidesky.Main;
 import io.github.awidesky.guiUtil.SwingDialogs;
 import io.github.awidesky.guiUtil.TaskLogger;
+import io.github.awidesky.jCipherUtil.cipher.symmetric.SymmetricCipherUtil;
+import io.github.awidesky.jCipherUtil.cipher.symmetric.aes.AESKeySize;
+import io.github.awidesky.jCipherUtil.cipher.symmetric.aes.AES_GCMCipherUtil;
+import io.github.awidesky.jCipherUtil.key.keyExchange.EllipticCurveKeyExchanger;
+import io.github.awidesky.jCipherUtil.key.keyExchange.ecdh.ECDHCurves;
+import io.github.awidesky.jCipherUtil.key.keyExchange.ecdh.ECDHKeyExchanger;
+import io.github.awidesky.jCipherUtil.messageInterface.InPut;
+import io.github.awidesky.serverSide.connection.CipherClientConnection;
+import io.github.awidesky.serverSide.connection.ClientConnection;
+import io.github.awidesky.serverSide.connection.PlainConnection;
 
 public class Server implements Runnable {
 
@@ -29,12 +43,22 @@ public class Server implements Runnable {
 	
 	private ConcurrentHashMap<UUID, ConnectedClient> clients = new ConcurrentHashMap<>();
 	
+	private final boolean encrypted;
+	private final boolean sendHash;
+	private final char[] password;
+	
+	private final EllipticCurveKeyExchanger k = new ECDHKeyExchanger(ECDHCurves.secp521r1);
+	private final ByteBuffer pkLenBuf = ByteBuffer.allocate(Integer.BYTES);
+	
 	private TaskLogger logger;
 	
-	public Server(int port, ServerFrame serverFrame, TaskLogger logger) {
+	public Server(int port, ServerFrame serverFrame, TaskLogger logger, boolean sendHash, boolean encrypted, char[] password) {
 		this.port = port;
 		this.frame = serverFrame;
 		this.logger = logger;
+		this.sendHash = sendHash;
+		this.encrypted = encrypted;
+		this.password = password;
 	}
 
 	public String getselfIP() {
@@ -64,7 +88,7 @@ public class Server implements Runnable {
 			SwingDialogs.information("Server opened!", "Server is wating connection from " + getselfIP() + ":" + port, false);
 			
 			while (!Main.isAppStopped() && !future.isCancelled()) {
-				logger.info("Server|Ready for connection...");
+				logger.info("Ready for connection...");
 				
 				ClientConnection sc = connectClient(server.accept());
 				if(sc == null) continue;
@@ -94,16 +118,18 @@ public class Server implements Runnable {
 	private ClientConnection connectClient(SocketChannel accepted) {
 		try {
 			InetSocketAddress remotAddress = (InetSocketAddress)accepted.getRemoteAddress();
-			ByteBuffer buf = ByteBuffer.allocate(16);
-
 			logger.info("Accepted Conection : " + remotAddress);
+			
+			SymmetricCipherUtil cipher = exchangeKey(accepted);
+			
+			if(password != null && !checkPassword(accepted, cipher)) return null;
+			
 			logger.info("Recieving UUID...");
-			while(buf.hasRemaining()) accepted.read(buf);
 			long[] bits = new long[2];
-			buf.flip().asLongBuffer().get(bits);
+			ByteBuffer.wrap(receiveSecurePacket(accepted, cipher)).flip().asLongBuffer().get(bits);
 			
 			UUID uu;
-			if(bits[0] == 0 && bits[1] == 0) {
+			if(bits[0] == 0 && bits[1] == 0) { //TODO : security danger?
 				uu = Stream.generate(UUID::randomUUID)
 						.filter(u -> !clients.keySet().contains(u))
 						.filter(u -> u.getMostSignificantBits() != 0 || u.getLeastSignificantBits() != 0)
@@ -112,8 +138,8 @@ public class Server implements Runnable {
 
 				SwingDialogs.information("Connected to a Client!", "Connection from " + remotAddress + ", UUID : " + uu, false); //TODO : confirm?
 				
-				buf.clear().asLongBuffer().put(uu.getMostSignificantBits()).put(uu.getLeastSignificantBits()).flip();
-				while(buf.hasRemaining()) accepted.write(buf);
+				sendSecurePacket(accepted, cipher,
+						ByteBuffer.allocate(16).putLong(uu.getMostSignificantBits()).putLong(uu.getLeastSignificantBits()).flip());
 				
 				ConnectedClient c = new ConnectedClient(uu);
 				clients.put(uu, c);
@@ -127,12 +153,74 @@ public class Server implements Runnable {
 			}
 
 			ConnectedClient client = clients.computeIfAbsent(uu, ConnectedClient::new);
-			return client.addChannel(accepted, remotAddress);
+			ClientConnection connection;
+			if(encrypted) {
+				connection = new CipherClientConnection(cipher);
+			} else {
+				connection = new PlainConnection();
+			}
+			connection.init(accepted, remotAddress, uu.toString().substring(0, 8), sendHash);
+			client.addConnection(connection);
+			return connection;
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			return null; //TODO : null
 		}
+	}
+
+	private SymmetricCipherUtil exchangeKey(SocketChannel accepted) throws IOException {
+		ByteBuffer pkBuf = ByteBuffer.wrap(k.init().getEncoded());
+		pkLenBuf.clear().putInt(pkBuf.limit()).flip();
+		logger.debug("ECDH public key size : " + pkBuf.limit());
+		logger.debug("Send ECDH public key : " + Base64.getEncoder().encodeToString(pkBuf.array()));
+		while(pkLenBuf.hasRemaining()) accepted.write(pkLenBuf);
+		while(pkBuf.hasRemaining()) accepted.write(pkBuf);
+		logger.debug("ECDH public key sent!");
+		
+		pkLenBuf.clear();
+		pkBuf.clear();
+		while(pkLenBuf.hasRemaining()) accepted.read(pkLenBuf);
+		int pkBufsize = pkLenBuf.flip().getInt();
+		logger.debug("Peer ECDH public key size : " + pkBufsize);
+		if(pkBufsize > pkBuf.capacity()) pkBuf = ByteBuffer.allocate(pkBufsize);
+		pkBuf.limit(pkBufsize);
+		while(pkBuf.hasRemaining()) accepted.read(pkBuf);
+		byte[] otherPk = new byte[pkBuf.flip().limit()];
+		pkBuf.get(otherPk);
+		logger.debug("ECDH public key received : " + Base64.getEncoder().encodeToString(otherPk));
+		return new AES_GCMCipherUtil.Builder(AESKeySize.SIZE_256).build(k.exchangeKey(k.decodePublicKey(otherPk)));
+	}
+
+	private boolean checkPassword(SocketChannel accepted, SymmetricCipherUtil cipher) throws IOException {
+		CharBuffer charBuffer = ByteBuffer.wrap(receiveSecurePacket(accepted, cipher)).order(ByteOrder.BIG_ENDIAN)
+				.asCharBuffer();
+		char[] ps = new char[charBuffer.remaining()];
+		charBuffer.get(ps);
+		boolean ret = Arrays.equals(ps, password);
+		logger.info("Password check : " + ret);
+		for (int i = 0; i < ps.length; i++) ps[i] = '\0';
+		charBuffer.clear().put(ps);
+		return ret;
+	}
+	
+	ByteBuffer securePacketLen = ByteBuffer.allocate(Integer.BYTES);
+	private void sendSecurePacket(SocketChannel accepted, SymmetricCipherUtil cipher, ByteBuffer buf) throws IOException {
+		byte[] b = new byte[buf.remaining()];
+		buf.get(b);
+		b = cipher.encryptToSingleBuffer(InPut.from(b));
+		securePacketLen.clear().putInt(b.length).flip();
+		while(securePacketLen.hasRemaining()) accepted.write(securePacketLen);
+
+		buf = ByteBuffer.wrap(b);
+		while(buf.hasRemaining()) accepted.write(buf);
+	}
+	private byte[] receiveSecurePacket(SocketChannel accepted, SymmetricCipherUtil cipher) throws IOException {
+		while(securePacketLen.hasRemaining()) accepted.read(securePacketLen);
+		int len = securePacketLen.flip().getInt();
+		ByteBuffer b = ByteBuffer.allocate(len);
+		while(b.hasRemaining()) accepted.read(b);
+		return cipher.decryptToSingleBuffer(InPut.from(b.array()));
 	}
 
 	public boolean disconnect() {

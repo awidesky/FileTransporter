@@ -1,6 +1,5 @@
 package io.github.awidesky.serverSide;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -8,7 +7,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
 
+import io.github.awidesky.Main;
 import io.github.awidesky.guiUtil.SwingDialogs;
+import io.github.awidesky.serverSide.selectedFile.SelectedFile;
 
 public class ClientListTableModel extends AbstractTableModel {
 
@@ -16,12 +17,13 @@ public class ClientListTableModel extends AbstractTableModel {
 	
 	public class FileProgress {
 		private final SelectedFile file;
-		private int progress;
+		private int progress, retry;
 		private String progressString;
 		private String status;
 		
 		public FileProgress(SelectedFile f) {
 			this.file = f;
+			this.retry = 0;
 			this.setProgress(0);
 			this.setProgressString("0%");
 			this.setStatus("");
@@ -48,11 +50,26 @@ public class ClientListTableModel extends AbstractTableModel {
 			this.progress = progress;
 			updated(this);
 		}
-		public File getFile() {
-			return file.actual();
+		public SelectedFile getFile() {
+			return file;
 		}
 		public String getRelativePath() {
 			return file.relative();
+		}
+		public int getRetry() {
+			return retry;
+		}
+		public boolean retry() {
+			this.setProgress(0);
+			this.setProgressString("0%");
+			
+			if(retry++ < Main.maxRetry) { //only Main.maxRetry times of retry is permitted
+				this.setStatus("RETRY");
+				return true;
+			} else {
+				this.setStatus("ERROR");
+				return true;
+			}
 		}
 	}
 	
@@ -107,7 +124,7 @@ public class ClientListTableModel extends AbstractTableModel {
 		case 0: // Status
 			return rows.get(rowIndex).getStatus();
 		case 1: // File
-			return rows.get(rowIndex).getFile().getName();
+			return rows.get(rowIndex).getFile().actual().getName();
 		case 2: // Progress
 			return rows.get(rowIndex).getProgress(); //TODO: was getNowSendingFileString
 		}

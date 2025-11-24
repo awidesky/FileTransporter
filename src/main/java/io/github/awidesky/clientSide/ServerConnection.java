@@ -162,7 +162,7 @@ public class ServerConnection implements Runnable{
 			while (total < fileSize) {
 				logger.info("Try transfer from " + remoteAddress + " to " + destFile.getName()); // TODO : debug level, relativize
 
-				long read = dest.transferFrom(ch, total, Math.min(Main.transferChunk, fileSize - total));
+				long read = dest.transferFrom(ch, total, Math.min(Main.getTransferChunk(), fileSize - total));
 				total += read;
 				logger.info("Transferred %s (total : %s of %s) to %s" // TODO : debug level
 						.formatted(Main.formatFileSize(read), Main.formatFileSize(total), Main.formatFileSize(fileSize), remoteAddress));

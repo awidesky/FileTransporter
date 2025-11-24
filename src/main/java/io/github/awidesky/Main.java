@@ -34,11 +34,12 @@ public class Main {
 	private static boolean isStop = false;
 	private static ExecutorService threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 	public static AsynchronousChannelGroup channelGroup;
-	public static int transferChunk = 0;
+	private static int transferChunk = 0;
 	
 	public static final String version = "v1.0.0";
 	
 	public static final int lenBufSize = 16;
+	public static final int maxRetry = 3;
 	public static final Charset charset = Charset.forName("UTF-8");
 	
 	public static final Image icon = null; //TODO : use images
@@ -88,11 +89,16 @@ public class Main {
 			transferChunk = Integer.parseInt(tpCh.substring(0, tpCh.length() - 1));
 		} 
 		
-		if(transferChunk == 0L) {// TODO Errorcheck from caller
+		if(transferChunk <= 0L) {// TODO Errorcheck from caller
 			System.err.println("invalid argument for TransferChunk : " + tpCh);
-			System.err.println("TransferChunk sets size of a chunk to send at a time(affect to sending progress bar), type like \"512B\" or \"256mb\" (b/kb/mb/gb. case ignored)");
+			System.err.println("TransferChunk sets size of a chunk to send at a time(affect to sending progress bar)");
+			System.err.println("Type like \"512B\" or \"256mb\" (b/kb/mb/gb. case ignored)");
+			/* Encrypted packet length data is put in 4 bytes */
+			System.err.println("Largest possible value is : " + Main.formatFileSize(Integer.MAX_VALUE));
+			transferChunk = 32 * 1024;
+			System.err.println("Using default value : " + Main.formatFileSize(transferChunk));
 		} else {
-			mainLogger.info("transferChunk = " + Main.formatFileSize(Main.transferChunk) + "byte"); //log might queued but not be printed
+			mainLogger.info("transferChunk = " + Main.formatFileSize(Main.transferChunk)); //log might queued but not be printed
 		}
 	}
 	
@@ -216,6 +222,10 @@ public class Main {
 
 	public static ExecutorService getThreadPool() {
 		return threadPool;
+	}
+
+	public static int getTransferChunk() {
+		return transferChunk;
 	}
 
 

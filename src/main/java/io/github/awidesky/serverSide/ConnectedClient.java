@@ -9,8 +9,6 @@
 
 package io.github.awidesky.serverSide;
 
-import java.net.InetSocketAddress;
-import java.nio.channels.SocketChannel;
 import java.util.UUID;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -18,6 +16,7 @@ import java.util.stream.Collectors;
 
 import io.github.awidesky.guiUtil.SwingDialogs;
 import io.github.awidesky.serverSide.ClientListTableModel.FileProgress;
+import io.github.awidesky.serverSide.connection.ClientConnection;
 
 public class ConnectedClient {
 	
@@ -30,10 +29,10 @@ public class ConnectedClient {
 		this.uuid = uuid;
 	}
 	
-	public ClientConnection addChannel(SocketChannel channel, InetSocketAddress remoteAddr) {
-		ClientConnection connection = new ClientConnection(channel, remoteAddr, uuid.toString().substring(0, 8), fileQueue, connList::remove);
+	public void addConnection(ClientConnection connection) {
+		connection.setFileQueue(fileQueue);
+		connection.setFinishCallback(connList::remove);
 		connList.add(connection);
-		return connection;
 	}
 
 	public String getUUID() {

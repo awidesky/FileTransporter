@@ -1,4 +1,4 @@
-package io.github.awidesky.serverSide;
+package io.github.awidesky.serverSide.selectedFile;
 
 import java.awt.BorderLayout;
 import java.awt.Point;

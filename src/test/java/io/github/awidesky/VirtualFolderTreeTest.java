@@ -23,8 +23,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.github.awidesky.serverSide.SelectedFile;
-import io.github.awidesky.serverSide.VirtualFolderTree;
+import io.github.awidesky.serverSide.selectedFile.SelectedFile;
+import io.github.awidesky.serverSide.selectedFile.VirtualFolderTree;
 /**
  * root  
  * ├ fileRoot.txt  
