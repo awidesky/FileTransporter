@@ -1,4 +1,4 @@
-	package io.github.awidesky.fileTransporter;
+package io.github.awidesky.fileTransporter;
 
 import java.awt.Image;
 import java.awt.Taskbar;
@@ -28,7 +28,9 @@ import io.github.awidesky.fileTransporter.common.gui.InitFrame;
 import io.github.awidesky.guiUtil.LoggerThread;
 import io.github.awidesky.guiUtil.SwingDialogs;
 import io.github.awidesky.guiUtil.TaskLogger;
+import io.github.awidesky.guiUtil.level.Level;
 import io.github.awidesky.projectPath.JarPath;
+import io.github.awidesky.projectPath.UserDataPath;
 
 
 public class Main {
@@ -70,6 +72,10 @@ public class Main {
 	}
 	
 	public static void main(String[] args) {
+		
+		for(String arg : args) {
+			if(arg.startsWith("--logLevel=")) logThread.setLogLevel(Level.valueOf(arg.replace("--logLevel=", "")));
+		}
 		
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -118,10 +124,9 @@ public class Main {
 	
 	
 	private static void prepareLogFile() {
-		
 		try {
-			File logFolder = new File(new File(".").getAbsoluteFile().getParent() + File.separator + "logs");
-			File logFile = new File(logFolder.getAbsolutePath() + File.separator + "log-" + new SimpleDateFormat("yyyy-MM-dd-kk-mm-ss.SSS").format(new Date()) + ".txt");
+			File logFolder = new File(UserDataPath.appLocalFolder("awidesky", "FileTransporter", "logs"));
+			File logFile = new File(logFolder.getAbsolutePath(), "log-" + new SimpleDateFormat("yyyy-MM-dd-kk-mm-ss.SSS").format(new Date()) + ".txt");
 			logFolder.mkdirs();
 			logFile.createNewFile();
 			logThread.setLogDestination(new FileOutputStream(logFile), true);

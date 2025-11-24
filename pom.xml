@@ -234,6 +234,7 @@
 					<destination>${build.dir}/jpackage</destination>
 					<mainJar>FileTransporter.jar</mainJar>
 					<mainClass>io.github.awidesky.fileTransporter.Main</mainClass>
+					<arguments>--logLevel=DEBUG</arguments>
 					<name>FileTransporter</name>
 					<vendor>Eugene Hong</vendor>
 					<appVersion>${project.version}</appVersion>
@@ -260,7 +261,7 @@
 							<dontWrapJar>true</dontWrapJar>
 							<headerType>gui</headerType>
 							<errTitle></errTitle>
-							<cmdLine></cmdLine>
+							<cmdLine>--logLevel=DEBUG</cmdLine>
 							<chdir></chdir>
 							<priority>normal</priority>
 							<downloadUrl>https://adoptium.net/</downloadUrl>
