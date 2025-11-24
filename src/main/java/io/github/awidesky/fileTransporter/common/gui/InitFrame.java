@@ -27,12 +27,12 @@ public class InitFrame extends JFrame {
 
 	private JLabel tpChunk = new JLabel("TransferChunk : ");
 	private JTextField tpChunk_t = new JTextField("1mb");
-	
+
 	public InitFrame() {
 
 		int he = 150, wi = 300, tfWidth = 70;
 		setTitle("FileTransporter " + Main.version);
-		setIconImage(Main.icon);
+		setIconImage(Main.ICON);
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		addWindowListener(new WindowAdapter() {
 

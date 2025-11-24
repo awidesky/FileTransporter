@@ -1,6 +1,8 @@
 	package io.github.awidesky.fileTransporter;
 
 import java.awt.Image;
+import java.awt.Taskbar;
+import java.awt.Taskbar.Feature;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -16,6 +18,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
@@ -25,6 +28,7 @@ import io.github.awidesky.fileTransporter.common.gui.InitFrame;
 import io.github.awidesky.guiUtil.LoggerThread;
 import io.github.awidesky.guiUtil.SwingDialogs;
 import io.github.awidesky.guiUtil.TaskLogger;
+import io.github.awidesky.projectPath.JarPath;
 
 
 public class Main {
@@ -42,7 +46,7 @@ public class Main {
 	public static final int maxRetry = 3;
 	public static final Charset charset = Charset.forName("UTF-8");
 	
-	public static final Image icon = null; //TODO : use images
+	public static Image ICON = null; //TODO : use images
 	
 	private static JFrame frame;
 	
@@ -52,6 +56,16 @@ public class Main {
 		} catch (IOException e) {
 			SwingDialogs.error("Cannot generate Thread Pool!!", "%e%", e, true);
 			System.exit(1);
+		}
+		 
+		File f = new File(JarPath.getProjectPath(Main.class).replace(File.separator, "/") + "/ICON.png");
+		try {
+			ICON = ImageIO.read(f);
+			if(Taskbar.isTaskbarSupported() && Taskbar.getTaskbar().isSupported(Feature.ICON_IMAGE))
+				Taskbar.getTaskbar().setIconImage(ICON);
+		} catch (IOException e) {
+			SwingDialogs.warning("Unable to find the ICON image file!",
+					"%e%\n" + f.getAbsolutePath() + "\nDoes not exist! Default Java ICON will be used...", e, false);
 		}
 	}
 	

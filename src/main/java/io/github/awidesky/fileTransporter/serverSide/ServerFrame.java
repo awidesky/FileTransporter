@@ -62,7 +62,7 @@ public class ServerFrame extends JFrame {
 	
 	public ServerFrame() {
 		setTitle("FileTransporter(server) " + Main.version);
-		setIconImage(Main.icon);
+		setIconImage(Main.ICON);
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		addWindowListener(new WindowAdapter() {
 			@Override
