@@ -1,4 +1,4 @@
-	package io.github.awidesky;
+	package io.github.awidesky.fileTransporter;
 
 import java.awt.Image;
 import java.io.File;
@@ -21,7 +21,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
-import io.github.awidesky.common.gui.InitFrame;
+import io.github.awidesky.fileTransporter.common.gui.InitFrame;
 import io.github.awidesky.guiUtil.LoggerThread;
 import io.github.awidesky.guiUtil.SwingDialogs;
 import io.github.awidesky.guiUtil.TaskLogger;

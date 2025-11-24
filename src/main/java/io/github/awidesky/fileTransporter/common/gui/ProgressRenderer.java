@@ -1,4 +1,4 @@
-package io.github.awidesky.common.gui;
+package io.github.awidesky.fileTransporter.common.gui;
 
 import java.awt.Component;
 

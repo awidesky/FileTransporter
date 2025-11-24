@@ -7,16 +7,16 @@
  * Please refer to LICENSE
  * */
 
-package io.github.awidesky.serverSide;
+package io.github.awidesky.fileTransporter.serverSide;
 
 import java.util.UUID;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 
+import io.github.awidesky.fileTransporter.serverSide.ClientListTableModel.FileProgress;
+import io.github.awidesky.fileTransporter.serverSide.connection.ClientConnection;
 import io.github.awidesky.guiUtil.SwingDialogs;
-import io.github.awidesky.serverSide.ClientListTableModel.FileProgress;
-import io.github.awidesky.serverSide.connection.ClientConnection;
 
 public class ConnectedClient {
 	

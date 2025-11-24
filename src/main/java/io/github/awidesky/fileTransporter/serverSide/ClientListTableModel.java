@@ -1,4 +1,4 @@
-package io.github.awidesky.serverSide;
+package io.github.awidesky.fileTransporter.serverSide;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -7,9 +7,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
 
-import io.github.awidesky.Main;
+import io.github.awidesky.fileTransporter.Main;
+import io.github.awidesky.fileTransporter.serverSide.selectedFile.SelectedFile;
 import io.github.awidesky.guiUtil.SwingDialogs;
-import io.github.awidesky.serverSide.selectedFile.SelectedFile;
 
 public class ClientListTableModel extends AbstractTableModel {
 

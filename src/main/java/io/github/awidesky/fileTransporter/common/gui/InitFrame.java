@@ -1,4 +1,4 @@
-package io.github.awidesky.common.gui;
+package io.github.awidesky.fileTransporter.common.gui;
 
 import java.awt.Dimension;
 import java.awt.Insets;
@@ -11,9 +11,9 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
 
-import io.github.awidesky.Main;
-import io.github.awidesky.clientSide.ClientFrame;
-import io.github.awidesky.serverSide.ServerFrame;
+import io.github.awidesky.fileTransporter.Main;
+import io.github.awidesky.fileTransporter.clientSide.ClientFrame;
+import io.github.awidesky.fileTransporter.serverSide.ServerFrame;
 import io.github.awidesky.guiUtil.TaskLogger;
 
 public class InitFrame extends JFrame {

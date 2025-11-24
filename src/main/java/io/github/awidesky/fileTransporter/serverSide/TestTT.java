@@ -1,4 +1,4 @@
-package io.github.awidesky.serverSide;
+package io.github.awidesky.fileTransporter.serverSide;
 
 import java.security.PublicKey;
 import java.util.Random;

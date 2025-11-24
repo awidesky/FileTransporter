@@ -1,4 +1,4 @@
-package io.github.awidesky.serverSide;
+package io.github.awidesky.fileTransporter.serverSide;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -17,7 +17,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
-import io.github.awidesky.Main;
+import io.github.awidesky.fileTransporter.Main;
+import io.github.awidesky.fileTransporter.serverSide.connection.CipherClientConnection;
+import io.github.awidesky.fileTransporter.serverSide.connection.ClientConnection;
+import io.github.awidesky.fileTransporter.serverSide.connection.PlainConnection;
 import io.github.awidesky.guiUtil.SwingDialogs;
 import io.github.awidesky.guiUtil.TaskLogger;
 import io.github.awidesky.jCipherUtil.cipher.symmetric.SymmetricCipherUtil;
@@ -27,9 +30,6 @@ import io.github.awidesky.jCipherUtil.key.keyExchange.EllipticCurveKeyExchanger;
 import io.github.awidesky.jCipherUtil.key.keyExchange.ecdh.ECDHCurves;
 import io.github.awidesky.jCipherUtil.key.keyExchange.ecdh.ECDHKeyExchanger;
 import io.github.awidesky.jCipherUtil.messageInterface.InPut;
-import io.github.awidesky.serverSide.connection.CipherClientConnection;
-import io.github.awidesky.serverSide.connection.ClientConnection;
-import io.github.awidesky.serverSide.connection.PlainConnection;
 
 public class Server implements Runnable {
 

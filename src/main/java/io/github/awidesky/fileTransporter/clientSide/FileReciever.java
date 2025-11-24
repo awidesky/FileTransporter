@@ -1,4 +1,4 @@
-package io.github.awidesky.clientSide;
+package io.github.awidesky.fileTransporter.clientSide;
 
 import java.awt.Desktop;
 import java.io.File;
@@ -16,7 +16,7 @@ import java.util.concurrent.Future;
 
 import javax.swing.SwingUtilities;
 
-import io.github.awidesky.Main;
+import io.github.awidesky.fileTransporter.Main;
 import io.github.awidesky.guiUtil.Logger;
 import io.github.awidesky.guiUtil.SwingDialogs;
 

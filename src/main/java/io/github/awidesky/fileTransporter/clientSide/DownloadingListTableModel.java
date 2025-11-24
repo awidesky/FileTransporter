@@ -1,4 +1,4 @@
-package io.github.awidesky.clientSide;
+package io.github.awidesky.fileTransporter.clientSide;
 
 import java.util.ArrayList;
 import java.util.LinkedList;

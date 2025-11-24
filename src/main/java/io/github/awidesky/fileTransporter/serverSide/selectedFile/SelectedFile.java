@@ -1,4 +1,4 @@
-package io.github.awidesky.serverSide.selectedFile;
+package io.github.awidesky.fileTransporter.serverSide.selectedFile;
 
 import java.io.File;
 

@@ -1,7 +1,7 @@
-package io.github.awidesky.serverSide.connection;
+package io.github.awidesky.fileTransporter.serverSide.connection;
 
+import io.github.awidesky.fileTransporter.serverSide.selectedFile.SelectedFile;
 import io.github.awidesky.jCipherUtil.cipher.symmetric.SymmetricCipherUtil;
-import io.github.awidesky.serverSide.selectedFile.SelectedFile;
 
 public class CipherClientConnection extends ClientConnection {
 

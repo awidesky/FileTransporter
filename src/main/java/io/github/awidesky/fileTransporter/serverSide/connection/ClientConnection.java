@@ -1,4 +1,4 @@
-package io.github.awidesky.serverSide.connection;
+package io.github.awidesky.fileTransporter.serverSide.connection;
 
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
@@ -7,11 +7,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
-import io.github.awidesky.Main;
+import io.github.awidesky.fileTransporter.Main;
+import io.github.awidesky.fileTransporter.serverSide.ClientListTableModel.FileProgress;
+import io.github.awidesky.fileTransporter.serverSide.selectedFile.SelectedFile;
 import io.github.awidesky.guiUtil.SwingDialogs;
 import io.github.awidesky.guiUtil.TaskLogger;
-import io.github.awidesky.serverSide.ClientListTableModel.FileProgress;
-import io.github.awidesky.serverSide.selectedFile.SelectedFile;
 
 
 /**

@@ -1,4 +1,4 @@
-package io.github.awidesky.serverSide;
+package io.github.awidesky.fileTransporter.serverSide;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
@@ -23,11 +23,11 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 
-import io.github.awidesky.Main;
-import io.github.awidesky.common.gui.ProgressRenderer;
+import io.github.awidesky.fileTransporter.Main;
+import io.github.awidesky.fileTransporter.common.gui.ProgressRenderer;
+import io.github.awidesky.fileTransporter.serverSide.selectedFile.VirtualFolderTree;
 import io.github.awidesky.guiUtil.SwingDialogs;
 import io.github.awidesky.guiUtil.TaskLogger;
-import io.github.awidesky.serverSide.selectedFile.VirtualFolderTree;
 
 public class ServerFrame extends JFrame {
 

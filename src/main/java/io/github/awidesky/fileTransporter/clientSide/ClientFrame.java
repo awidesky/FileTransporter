@@ -1,4 +1,4 @@
-package io.github.awidesky.clientSide;
+package io.github.awidesky.fileTransporter.clientSide;
 
 import java.awt.Dimension;
 import java.awt.Insets;
@@ -18,8 +18,8 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
-import io.github.awidesky.Main;
-import io.github.awidesky.common.gui.ProgressRenderer;
+import io.github.awidesky.fileTransporter.Main;
+import io.github.awidesky.fileTransporter.common.gui.ProgressRenderer;
 import io.github.awidesky.guiUtil.SwingDialogs;
 import io.github.awidesky.guiUtil.TaskLogger;
 

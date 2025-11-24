@@ -1,4 +1,4 @@
-package io.github.awidesky.serverSide.connection;
+package io.github.awidesky.fileTransporter.serverSide.connection;
 
 import java.io.File;
 import java.io.IOException;
@@ -7,9 +7,9 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.file.StandardOpenOption;
 
-import io.github.awidesky.Main;
+import io.github.awidesky.fileTransporter.Main;
+import io.github.awidesky.fileTransporter.serverSide.selectedFile.SelectedFile;
 import io.github.awidesky.guiUtil.SwingDialogs;
-import io.github.awidesky.serverSide.selectedFile.SelectedFile;
 
 
 /**

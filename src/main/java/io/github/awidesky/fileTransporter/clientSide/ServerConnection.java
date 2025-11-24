@@ -1,4 +1,4 @@
-package io.github.awidesky.clientSide;
+package io.github.awidesky.fileTransporter.clientSide;
 
 import java.io.File;
 import java.io.IOException;
@@ -10,7 +10,7 @@ import java.nio.channels.SocketChannel;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.Future;
 
-import io.github.awidesky.Main;
+import io.github.awidesky.fileTransporter.Main;
 import io.github.awidesky.guiUtil.SwingDialogs;
 import io.github.awidesky.guiUtil.TaskLogger;
 

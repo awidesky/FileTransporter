@@ -1,4 +1,4 @@
-package io.github.awidesky.serverSide.selectedFile;
+package io.github.awidesky.fileTransporter.serverSide.selectedFile;
 
 import java.awt.BorderLayout;
 import java.awt.Point;
@@ -29,8 +29,8 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 
-import io.github.awidesky.Main;
-import io.github.awidesky.common.gui.ImageViewer;
+import io.github.awidesky.fileTransporter.Main;
+import io.github.awidesky.fileTransporter.common.gui.ImageViewer;
 
 public class VirtualFolderTree extends JPanel {
 	
