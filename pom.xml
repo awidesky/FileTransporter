@@ -242,6 +242,7 @@
 					<copyright>Copyright (c) 2021-2025 Eugene Hong. All Rights Reserved.</copyright>
 					<aboutUrl>https://github.com/awidesky/FileTransporter</aboutUrl>
 					<addModules>${jre_modules}</addModules>
+					<!-- <verbose>true</verbose> -->
 				</configuration>
 			</plugin>
 			<plugin>
@@ -301,7 +302,8 @@
 								<resource>
 									<directory>${project.basedir}</directory>
 									<includes>
-										<include>icon.png</include>
+										<include>icon-large.png</include>
+										<include>icon-small.png</include>
 										<include>LICENSE</include>
 									</includes>
 								</resource>
@@ -336,7 +338,7 @@
 								<resource>
 									<directory>${project.basedir}</directory>
 									<includes>
-										<include>icon.png</include>
+										<include>icon-large.png</include>
 										<include>LICENSE</include>
 									</includes>
 								</resource>

@@ -24,6 +24,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
+import io.github.awidesky.fileTransporter.common.OSUtil;
 import io.github.awidesky.fileTransporter.common.gui.InitFrame;
 import io.github.awidesky.guiUtil.LoggerThread;
 import io.github.awidesky.guiUtil.SwingDialogs;
@@ -60,7 +61,8 @@ public class Main {
 			System.exit(1);
 		}
 		 
-		File f = new File(JarPath.getProjectPath(Main.class).replace(File.separator, "/") + "/ICON.png");
+		File f = new File(JarPath.getProjectPath(Main.class).replace(File.separator, "/")
+				+ "/ICON-" + (OSUtil.isMac() ? "small" : "large") + ".png");
 		try {
 			ICON = ImageIO.read(f);
 			if(Taskbar.isTaskbarSupported() && Taskbar.getTaskbar().isSupported(Feature.ICON_IMAGE))
