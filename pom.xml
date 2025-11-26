@@ -127,7 +127,7 @@
 						<artifactId>jpackage-maven-plugin</artifactId>
 						<version>1.6.5</version>
 						<configuration>
-							<icon>${project.basedir}/icon.png</icon>
+							<icon>${project.basedir}/icon-large.png</icon>
 							<linuxRpmLicenseType>MIT</linuxRpmLicenseType>
 							<linuxAppRelease>${maven.build.timestamp}</linuxAppRelease>
 							<linuxShortcut>true</linuxShortcut>
